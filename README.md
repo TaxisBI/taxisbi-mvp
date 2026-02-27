@@ -1,1 +1,1 @@
-# taxisbi-mcp
+# taxisbi-mvp monorepo
