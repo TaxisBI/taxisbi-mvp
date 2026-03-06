@@ -13,7 +13,7 @@ services:
     container_name: taxisbi-clickhouse
     restart: unless-stopped
     environment:
-      CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS: 1
+      #CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS: 1
       CLICKHOUSE_DB: taxisbi
       CLICKHOUSE_USER: taxisbi
       CLICKHOUSE_PASSWORD: ajaxiscool
