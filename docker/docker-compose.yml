@@ -1,1 +1,26 @@
-blank
+# Docker compose for local analytics environment
+# Services:
+# - clickhouse-server
+# Requirements:
+# - persist data to a named volume
+# - expose 8123 and 9000
+# - restart automatically
+# - minimal config for development
+
+services:
+  clickhouse-server:
+    image: clickhouse/clickhouse-server:latest
+    container_name: taxisbi-clickhouse
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_USER: taxisbi
+      CLICKHOUSE_PASSWORD: ajaxiscool
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+
+volumes:
+  clickhouse-data:
