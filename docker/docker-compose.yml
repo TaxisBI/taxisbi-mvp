@@ -13,6 +13,7 @@ services:
     container_name: taxisbi-clickhouse
     restart: unless-stopped
     environment:
+      #turned off initdb for dev, later to add back as needed
       #CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS: 1
       CLICKHOUSE_DB: taxisbi
       CLICKHOUSE_USER: taxisbi
