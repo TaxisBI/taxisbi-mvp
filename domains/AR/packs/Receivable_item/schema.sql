@@ -4,11 +4,12 @@ DROP TABLE IF EXISTS taxisbi.ar_receivable_item;
 
 CREATE TABLE taxisbi.ar_receivable_item
 (
-    id UInt64,
+    Client LowCardinality(String),
+    FiscalYear UInt16,
+    CustomerCode Nullable(LowCardinality(String)),
     DocumentNumber String,
     DocumentLineItem String,
 
-    CustomerCode Nullable(LowCardinality(String)),
     CustomerDesc Nullable(String),
 
     CompanyCode Nullable(LowCardinality(String)),
@@ -19,7 +20,22 @@ CREATE TABLE taxisbi.ar_receivable_item
     ClearingDate Nullable(Date),
 
     DocumentAmount Decimal(18, 2),
-    CurrencyCode Nullable(LowCardinality(String))
+    CurrencyCode Nullable(LowCardinality(String)),
+
+    OriginalSapClient Nullable(LowCardinality(String)),
+    OriginalFiscalYear Nullable(UInt16),
+    OriginalCompanyCode Nullable(LowCardinality(String)),
+    OriginalDocumentNumber Nullable(String),
+    OriginalDocumentLineItem Nullable(String),
+
+    LoadTimestamp DateTime
 )
 ENGINE = MergeTree
-ORDER BY (CompanyCode, CustomerCode, PostingDate, id);
+ORDER BY (
+    CompanyCode, 
+    PostingDate, 
+    CustomerCode, 
+    FiscalYear, 
+    DocumentNumber, 
+    DocumentLineItem
+);
