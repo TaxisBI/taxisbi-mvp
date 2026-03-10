@@ -6,13 +6,13 @@ CREATE TABLE taxisbi.ar_receivable_item
 (
     Client LowCardinality(String),
     FiscalYear UInt16,
-    CustomerCode Nullable(LowCardinality(String)),
+    CompanyCode LowCardinality(String),
     DocumentNumber String,
-    DocumentLineItem String,
+    DocumentLineItem LowCardinality(String),
 
+    CustomerCode LowCardinality(String),
     CustomerDesc Nullable(String),
 
-    CompanyCode Nullable(LowCardinality(String)),
     CompanyDesc Nullable(String),
 
     PostingDate Date,
@@ -20,11 +20,11 @@ CREATE TABLE taxisbi.ar_receivable_item
     ClearingDate Nullable(Date),
 
     DocumentAmount Decimal(18, 2),
-    CurrencyCode Nullable(LowCardinality(String)),
+    CurrencyCode LowCardinality(Nullable(String)),
 
-    OriginalSapClient Nullable(LowCardinality(String)),
+    OriginalSapClient LowCardinality(Nullable(String)),
     OriginalFiscalYear Nullable(UInt16),
-    OriginalCompanyCode Nullable(LowCardinality(String)),
+    OriginalCompanyCode LowCardinality(Nullable(String)),
     OriginalDocumentNumber Nullable(String),
     OriginalDocumentLineItem Nullable(String),
 
