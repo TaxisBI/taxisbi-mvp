@@ -8,18 +8,18 @@ CREATE TABLE taxisbi.ar_receivable_item
     DocumentNumber String,
     DocumentLineItem String,
 
-    CustomerCode nullable(LowCardinality(String)),
-    CustomerDesc nullable String,
+    CustomerCode Nullable(LowCardinality(String)),
+    CustomerDesc Nullable(String),
 
-    CompanyCode nullable(LowCardinality(String)),
-    CompanyDesc nullable String,
+    CompanyCode Nullable(LowCardinality(String)),
+    CompanyDesc Nullable(String),
 
     PostingDate Date,
     DueDate Date,
     ClearingDate Nullable(Date),
 
     DocumentAmount Decimal(18, 2),
-    CurrencyCode nullable(LowCardinality(String))
+    CurrencyCode Nullable(LowCardinality(String))
 )
 ENGINE = MergeTree
 ORDER BY (CompanyCode, CustomerCode, PostingDate, id);
