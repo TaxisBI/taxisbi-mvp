@@ -1,22 +1,25 @@
+-- Grain: one row per receivable document line item
+
 DROP TABLE IF EXISTS taxisbi.ar_receivable_item;
 
 CREATE TABLE taxisbi.ar_receivable_item
 (
-    id UInt32,
+    id UInt64,
     DocumentNumber String,
-    DocumentLineNumber String,
-    CustomerCode nullable String,
+    DocumentLineItem String,
+
+    CustomerCode nullable(LowCardinality(String)),
     CustomerDesc nullable String,
-    CompanyCode nullable String,
-    CompanyDesc String,
+
+    CompanyCode nullable(LowCardinality(String)),
+    CompanyDesc nullable String,
 
     PostingDate Date,
     DueDate Date,
-    ClearingDate nullable Date,
-    ReportDate Date,
-    
-    DocumentAmount decimal(18, 2),
-    CurrencyCode String
+    ClearingDate Nullable(Date),
+
+    DocumentAmount Decimal(18, 2),
+    CurrencyCode nullable(LowCardinality(String))
 )
 ENGINE = MergeTree
-ORDER BY id;
+ORDER BY (CompanyCode, CustomerCode, PostingDate, id);
