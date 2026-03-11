@@ -17,6 +17,7 @@ CREATE TABLE taxisbi.ar_receivable_item
 
     PostingDate Date,
     DueDate Date,
+    PaymentTerms LowCardinality(String),
     ClearingDate Nullable(Date),
 
     DocumentAmount Decimal(18, 2),
