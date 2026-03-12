@@ -1,0 +1,15 @@
+{
+  "mark": "bar",
+  "encoding": {
+    "x": {
+      "field": "AgingBucket",
+      "type": "ordinal",
+      "title": "Aging Bucket"
+    },
+    "y": {
+      "field": "Balance",
+      "type": "quantitative",
+      "title": "Receivable Balance"
+    }
+  }
+}
