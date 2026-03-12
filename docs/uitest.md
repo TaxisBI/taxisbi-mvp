@@ -17,6 +17,16 @@ npm run dev:start
 
 This starts ClickHouse first, then launches backend and UI dev servers.
 
+## Quick stop (one command)
+
+From repo root:
+
+```powershell
+npm run dev:stop
+```
+
+This stops host API/UI processes on ports 3000 and 5173, then shuts down Docker services.
+
 ## 1) Start ClickHouse
 
 From repo root:
@@ -84,8 +94,15 @@ Invoke-WebRequest -Uri "http://localhost:3000/api/charts/aging-by-bucket" -UseBa
 
 ## Stop processes
 
-- Backend/UI terminals: `Ctrl + C`
-- ClickHouse:
+- One command from repo root:
+
+```powershell
+npm run dev:stop
+```
+
+- Manual fallback:
+	- Backend/UI terminals: `Ctrl + C`
+	- ClickHouse:
 
 ```powershell
 docker compose -f docker/docker-compose.yml down
