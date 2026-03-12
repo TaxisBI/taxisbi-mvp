@@ -59,14 +59,21 @@
     "y": {
       "field": "AgingBucket",
       "type": "ordinal",
+      "scale": {
+        "paddingInner": 0.2,
+        "paddingOuter": 0.1
+      },
       "sort": {
         "field": "AgingBucketSort",
         "op": "min",
         "order": "ascending"
       },
       "axis": {
+        "ticks": false,
+        "tickSize": 0,
+        "labelPadding": 10,
         "titleAngle": 0,
-        "titlePadding": 22
+        "titlePadding": 25
       },
       "title": "Bucket"
     },

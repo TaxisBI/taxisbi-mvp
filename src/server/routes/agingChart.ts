@@ -24,6 +24,40 @@ type ThemeContext = {
   dashboard?: string;
 };
 
+export type AgingBucketInput = {
+  name: string;
+  conditions: Array<{
+    operator: '=' | '<>' | '>=' | '<=' | '>' | '<';
+    value: number;
+  }>;
+};
+
+const DEFAULT_AGING_BUCKETS: AgingBucketInput[] = [
+  { name: 'Current', conditions: [{ operator: '<=', value: 0 }] },
+  {
+    name: '1-30',
+    conditions: [
+      { operator: '>=', value: 1 },
+      { operator: '<=', value: 30 },
+    ],
+  },
+  {
+    name: '31-60',
+    conditions: [
+      { operator: '>=', value: 31 },
+      { operator: '<=', value: 60 },
+    ],
+  },
+  {
+    name: '61-90',
+    conditions: [
+      { operator: '>=', value: 61 },
+      { operator: '<=', value: 90 },
+    ],
+  },
+  { name: '91+', conditions: [{ operator: '>', value: 90 }] },
+];
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -193,7 +227,49 @@ function getTodayIsoDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export async function getAgingChart(reportDateInput?: string) {
+function escapeSqlString(value: string) {
+  return value.replace(/'/g, "''");
+}
+
+function buildBucketExpressions(buckets: AgingBucketInput[]) {
+  const labelParts: string[] = [];
+  const orderParts: string[] = [];
+
+  buckets.forEach((bucket, index) => {
+    const condition = bucket.conditions
+      .map((entry) => `days_past_due ${entry.operator} ${entry.value}`)
+      .join(' AND ');
+    const label = `'${escapeSqlString(bucket.name)}'`;
+    const orderValue = String(index + 1);
+
+    labelParts.push(condition, label);
+    orderParts.push(condition, orderValue);
+  });
+
+  const agingBucketExpr = `multiIf(${labelParts.join(', ')}, 'Unbucketed')`;
+  const agingBucketOrderExpr = `multiIf(${orderParts.join(', ')}, 9999)`;
+
+  return {
+    agingBucketExpr,
+    agingBucketOrderExpr,
+  };
+}
+
+function toSafeAgingBuckets(input?: AgingBucketInput[]) {
+  if (!input || input.length === 0) {
+    return DEFAULT_AGING_BUCKETS;
+  }
+
+  return input.map((bucket) => ({
+    name: bucket.name,
+    conditions: bucket.conditions.map((entry) => ({
+      operator: entry.operator,
+      value: entry.value,
+    })),
+  }));
+}
+
+export async function getAgingChart(reportDateInput?: string, bucketDefsInput?: AgingBucketInput[]) {
   const themeContext: ThemeContext = {
     domain: 'AR',
     pack: 'Receivable_item',
@@ -214,13 +290,18 @@ export async function getAgingChart(reportDateInput?: string) {
   const themeRootPath = path.resolve(process.cwd(), 'themes');
 
   const sql = await fs.readFile(sqlPath, 'utf8');
+  const bucketDefs = toSafeAgingBuckets(bucketDefsInput);
+  const { agingBucketExpr, agingBucketOrderExpr } = buildBucketExpressions(bucketDefs);
+  const finalSql = sql
+    .replace('{{AGING_BUCKET_EXPR}}', agingBucketExpr)
+    .replace('{{AGING_BUCKET_ORDER_EXPR}}', agingBucketOrderExpr);
   const specText = await fs.readFile(specPath, 'utf8');
   const spec = JSON.parse(specText);
   const themes = await loadBuiltInThemes(themeRootPath, themeContext);
   const defaultTheme = themes.light ? 'light' : Object.keys(themes)[0] ?? 'light';
 
   const resultSet = await clickhouse.query({
-    query: sql,
+    query: finalSql,
     format: 'JSONEachRow',
     query_params: {
       report_date: reportDate,
@@ -235,5 +316,6 @@ export async function getAgingChart(reportDateInput?: string) {
     themes,
     defaultTheme,
     reportDate,
+    buckets: bucketDefs,
   };
 }

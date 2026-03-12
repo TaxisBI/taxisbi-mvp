@@ -8,6 +8,7 @@
   "description": "Express + TypeScript scaffold",
   "main": "dist/server/index.js",
   "scripts": {
+    "dev:start": "node scripts/dev-start.js",
     "dev": "node scripts/dev-guard.js",
     "dev:raw": "ts-node-dev --respawn --transpile-only src/server/index.ts",
     "build": "tsc -p tsconfig.json",

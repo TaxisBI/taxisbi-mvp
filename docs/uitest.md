@@ -7,6 +7,16 @@ This guide starts the full local stack and verifies the AR aging chart render.
 - Node.js 20+
 - Docker Desktop running
 
+## Quick start (one command)
+
+From repo root:
+
+```powershell
+npm run dev:start
+```
+
+This starts ClickHouse first, then launches backend and UI dev servers.
+
 ## 1) Start ClickHouse
 
 From repo root:

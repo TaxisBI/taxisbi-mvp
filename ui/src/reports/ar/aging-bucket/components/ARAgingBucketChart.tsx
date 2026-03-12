@@ -20,8 +20,18 @@ export type ResolvedUiTheme = {
 type ARAgingBucketChartProps = {
   theme: string;
   reportDate: string;
+  buckets: AgingBucketDef[];
   onThemeCatalogResolved?: (themes: ThemeOption[], defaultTheme: string) => void;
   onUiThemeResolved?: (uiTheme: ResolvedUiTheme) => void;
+};
+
+export type AgingBucketDef = {
+  id: string;
+  name: string;
+  conditions: Array<{
+    operator: '=' | '<>' | '>=' | '<=' | '>' | '<';
+    value: number;
+  }>;
 };
 
 type ChartTheme = {
@@ -65,6 +75,7 @@ function deepMerge<T>(base: T, override: any): T {
 export default function ARAgingBucketChart({
   theme,
   reportDate,
+  buckets,
   onThemeCatalogResolved,
   onUiThemeResolved,
 }: ARAgingBucketChartProps) {
@@ -77,9 +88,22 @@ export default function ARAgingBucketChart({
 
   useEffect(() => {
     async function loadChart() {
-      const params = new URLSearchParams({ report_date: reportDate });
+      const params = new URLSearchParams({
+        report_date: reportDate,
+        buckets: JSON.stringify(
+          buckets.map((bucket) => ({
+            name: bucket.name,
+            conditions: bucket.conditions,
+          }))
+        ),
+      });
       const res = await fetch(`/api/charts/aging-by-bucket?${params.toString()}`);
       const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(typeof json?.error === 'string' ? json.error : 'Failed to load chart');
+      }
+
       const themes = (json.themes ?? {}) as Record<string, ChartTheme>;
       const fallbackThemeKey = (json.defaultTheme as string | undefined) ?? 'light';
       const themeOptions = Object.entries(themes).map(([key, value]) => ({
@@ -139,6 +163,14 @@ export default function ARAgingBucketChart({
         data: { values: json.data },
         encoding: {
           ...mergedSpec.encoding,
+          y: {
+            ...mergedSpec.encoding?.y,
+            sort: {
+              field: 'BucketOrder',
+              op: 'min',
+              order: 'ascending',
+            },
+          },
           x: {
             ...mergedSpec.encoding.x,
             title: `Receivable Balance (${unitTitle})`,
@@ -154,8 +186,11 @@ export default function ARAgingBucketChart({
       setSpec(fullSpec);
     }
 
-    loadChart();
-  }, [theme, reportDate, onThemeCatalogResolved, onUiThemeResolved]);
+    loadChart().catch((error) => {
+      console.error(error);
+      setSpec(null);
+    });
+  }, [theme, reportDate, buckets, onThemeCatalogResolved, onUiThemeResolved]);
 
   if (!spec) {
     return <div>Loading chart...</div>;

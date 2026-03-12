@@ -11,14 +11,9 @@ base AS
 )
 
 SELECT
-    multiIf(
-        days_past_due <= 0, 'Current',
-        days_past_due <= 30, '1-30',
-        days_past_due <= 60, '31-60',
-        days_past_due <= 90, '61-90',
-        '90+'
-    ) AS AgingBucket,
+    {{AGING_BUCKET_EXPR}} AS AgingBucket,
+    {{AGING_BUCKET_ORDER_EXPR}} AS BucketOrder,
     sum(DocumentAmount) AS Balance
 FROM base
-GROUP BY AgingBucket
-ORDER BY AgingBucket
+GROUP BY AgingBucket, BucketOrder
+ORDER BY BucketOrder, AgingBucket
