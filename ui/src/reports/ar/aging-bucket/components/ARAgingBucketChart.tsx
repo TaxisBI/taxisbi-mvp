@@ -1,9 +1,21 @@
 import { useEffect, useState } from 'react';
 import VegaChartRenderer from '../../../../charts/components/VegaChartRenderer';
 
+export type CanvasSizeMode =
+  | 'fit-width'
+  | 'fit-height'
+  | 'fit-screen'
+  | 'ratio-4-3'
+  | 'ratio-16-9'
+  | 'ratio-16-10'
+  | 'ratio-21-9'
+  | 'custom-pixels';
+
 export type ThemeOption = {
   key: string;
   label: string;
+  scope?: 'global' | 'domain' | 'pack' | 'dashboard';
+  createdBy?: string;
   displayOrder?: number;
 };
 
@@ -16,6 +28,10 @@ export type ResolvedUiTheme = {
   buttonText: string;
   buttonBorder: string;
   fontFamily: string;
+  modalOverlayBackground: string;
+  statusDanger: string;
+  statusSuccess: string;
+  overlapPalette: Array<{ border: string; background: string }>;
   tooltipTheme: 'light' | 'dark';
 };
 
@@ -23,6 +39,8 @@ type ARAgingBucketChartProps = {
   theme: string;
   reportDate: string;
   buckets: AgingBucketDef[];
+  canvasSizeMode: CanvasSizeMode;
+  customCanvasSize: { width: number; height: number };
   onThemeCatalogResolved?: (themes: ThemeOption[], defaultTheme: string) => void;
   onUiThemeResolved?: (uiTheme: ResolvedUiTheme) => void;
 };
@@ -30,6 +48,8 @@ type ARAgingBucketChartProps = {
 export type AgingBucketDef = {
   id: string;
   name: string;
+  isSpecial: boolean;
+  combinator: 'AND' | 'OR';
   conditions: Array<{
     operator: '=' | '<>' | '>=' | '<=' | '>' | '<';
     value: number;
@@ -39,6 +59,8 @@ export type AgingBucketDef = {
 type ChartTheme = {
   key?: string;
   label?: string;
+  scope?: 'global' | 'domain' | 'pack' | 'dashboard';
+  createdBy?: string;
   displayOrder?: number;
   ui?: Partial<ResolvedUiTheme>;
   spec?: Record<string, any>;
@@ -92,6 +114,8 @@ export default function ARAgingBucketChart({
   theme,
   reportDate,
   buckets,
+  canvasSizeMode,
+  customCanvasSize,
   onThemeCatalogResolved,
   onUiThemeResolved,
 }: ARAgingBucketChartProps) {
@@ -109,6 +133,8 @@ export default function ARAgingBucketChart({
         buckets: JSON.stringify(
           buckets.map((bucket) => ({
             name: bucket.name,
+            isSpecial: bucket.isSpecial,
+            combinator: bucket.combinator,
             conditions: bucket.conditions,
           }))
         ),
@@ -126,6 +152,8 @@ export default function ARAgingBucketChart({
         .map(([key, value]) => ({
           key,
           label: value.label ?? key,
+          scope: value.scope,
+          createdBy: value.createdBy,
           displayOrder: value.displayOrder,
         }))
         .sort((left, right) => {
@@ -150,6 +178,25 @@ export default function ARAgingBucketChart({
         buttonText: selectedTheme?.ui?.buttonText ?? '#0f172a',
         buttonBorder: selectedTheme?.ui?.buttonBorder ?? '#cbd5e1',
         fontFamily: selectedTheme?.ui?.fontFamily ?? 'Helvetica, Arial, sans-serif',
+        modalOverlayBackground:
+          selectedTheme?.ui?.modalOverlayBackground ?? 'rgba(15, 23, 42, 0.45)',
+        statusDanger: selectedTheme?.ui?.statusDanger ?? '#dc2626',
+        statusSuccess: selectedTheme?.ui?.statusSuccess ?? '#16a34a',
+        overlapPalette: Array.isArray(selectedTheme?.ui?.overlapPalette)
+          ? (selectedTheme?.ui?.overlapPalette as Array<{ border: string; background: string }>).filter(
+              (entry) =>
+                entry &&
+                typeof entry.border === 'string' &&
+                typeof entry.background === 'string'
+            )
+          : [
+              { border: '#dc2626', background: '#fee2e2' },
+              { border: '#d97706', background: '#ffedd5' },
+              { border: '#0891b2', background: '#cffafe' },
+              { border: '#7c3aed', background: '#ede9fe' },
+              { border: '#16a34a', background: '#dcfce7' },
+              { border: '#be185d', background: '#fce7f3' },
+            ],
         tooltipTheme: selectedTheme?.ui?.tooltipTheme ?? 'light',
       };
 
@@ -185,8 +232,28 @@ export default function ARAgingBucketChart({
         axisValues.push(value);
       }
 
+      const ratioSizeMap: Partial<Record<CanvasSizeMode, { width: number; height: number }>> = {
+        'ratio-4-3': { width: 1200, height: 900 },
+        'ratio-16-9': { width: 1200, height: 675 },
+        'ratio-16-10': { width: 1200, height: 750 },
+        'ratio-21-9': { width: 1260, height: 540 },
+        'custom-pixels': {
+          width: customCanvasSize.width,
+          height: customCanvasSize.height,
+        },
+      };
+
+      const ratioSize = ratioSizeMap[canvasSizeMode];
+
       const fullSpec = {
         ...mergedSpec,
+        ...(ratioSize
+          ? {
+              autosize: { type: 'pad', contains: 'padding' },
+              width: ratioSize.width,
+              height: ratioSize.height,
+            }
+          : {}),
         config: {
           ...(mergedSpec.config ?? {}),
           ...(mergedSpec.config?.style ? { style: mergedSpec.config.style } : {}),
@@ -245,7 +312,15 @@ export default function ARAgingBucketChart({
       console.error(error);
       setSpec(null);
     });
-  }, [theme, reportDate, buckets, onThemeCatalogResolved, onUiThemeResolved]);
+  }, [
+    theme,
+    reportDate,
+    buckets,
+    canvasSizeMode,
+    customCanvasSize,
+    onThemeCatalogResolved,
+    onUiThemeResolved,
+  ]);
 
   if (!spec) {
     return <div>Loading chart...</div>;
@@ -257,6 +332,8 @@ export default function ARAgingBucketChart({
       tooltipTheme={uiTheme.tooltipTheme}
       cardBackground={uiTheme.cardBackground}
       cardShadow={uiTheme.cardShadow}
+      canvasSizeMode={canvasSizeMode}
+      customCanvasSize={customCanvasSize}
     />
   );
 }

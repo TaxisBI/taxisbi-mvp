@@ -6,6 +6,7 @@
   "properties": {
     "key": { "type": "string" },
     "label": { "type": "string" },
+    "createdBy": { "type": "string" },
     "displayOrder": { "type": "integer" },
     "extends": { "type": "string" },
     "scope": {
@@ -33,6 +34,21 @@
         "buttonText": { "type": "string" },
         "buttonBorder": { "type": "string" },
         "fontFamily": { "type": "string" },
+        "modalOverlayBackground": { "type": "string" },
+        "statusDanger": { "type": "string" },
+        "statusSuccess": { "type": "string" },
+        "overlapPalette": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "border": { "type": "string" },
+              "background": { "type": "string" }
+            },
+            "required": ["border", "background"],
+            "additionalProperties": false
+          }
+        },
         "tooltipTheme": { "type": "string", "enum": ["light", "dark"] }
       },
       "additionalProperties": true

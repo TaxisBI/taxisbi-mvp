@@ -1,6 +1,7 @@
 {
   "key": "dark",
   "label": "Dark",
+  "createdBy": "TaxisBI",
   "displayOrder": 2,
   "scope": "global",
   "ui": {
@@ -12,6 +13,17 @@
     "buttonText": "#e5e7eb",
     "buttonBorder": "#334155",
     "fontFamily": "Helvetica, Arial, sans-serif",
+    "modalOverlayBackground": "rgba(2, 6, 23, 0.68)",
+    "statusDanger": "#f87171",
+    "statusSuccess": "#4ade80",
+    "overlapPalette": [
+      { "border": "#f87171", "background": "#3f1d1d" },
+      { "border": "#fbbf24", "background": "#3b2c14" },
+      { "border": "#22d3ee", "background": "#12323d" },
+      { "border": "#a78bfa", "background": "#2c2250" },
+      { "border": "#4ade80", "background": "#163326" },
+      { "border": "#f472b6", "background": "#402030" }
+    ],
     "tooltipTheme": "dark"
   },
   "spec": {

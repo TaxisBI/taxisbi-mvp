@@ -1,6 +1,7 @@
 {
   "key": "ember-dark",
   "label": "Ember Dark",
+  "createdBy": "Cheech",
   "displayOrder": 3,
   "scope": "pack",
   "extends": "dark",

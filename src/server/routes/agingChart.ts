@@ -5,6 +5,7 @@ import { clickhouse } from '../clickhouse/client';
 type ThemeDef = {
   key: string;
   label: string;
+  createdBy?: string;
   displayOrder?: number;
   extends?: string;
   scope?: 'global' | 'domain' | 'pack' | 'dashboard';
@@ -27,6 +28,8 @@ type ThemeContext = {
 
 export type AgingBucketInput = {
   name: string;
+  isSpecial: boolean;
+  combinator: 'AND' | 'OR';
   conditions: Array<{
     operator: '=' | '<>' | '>=' | '<=' | '>' | '<';
     value: number;
@@ -34,9 +37,11 @@ export type AgingBucketInput = {
 };
 
 const DEFAULT_AGING_BUCKETS: AgingBucketInput[] = [
-  { name: 'Current', conditions: [{ operator: '<=', value: 0 }] },
+  { name: 'Current', isSpecial: false, combinator: 'AND', conditions: [{ operator: '<=', value: 0 }] },
   {
     name: '1-30',
+    isSpecial: false,
+    combinator: 'AND',
     conditions: [
       { operator: '>=', value: 1 },
       { operator: '<=', value: 30 },
@@ -44,6 +49,8 @@ const DEFAULT_AGING_BUCKETS: AgingBucketInput[] = [
   },
   {
     name: '31-60',
+    isSpecial: false,
+    combinator: 'AND',
     conditions: [
       { operator: '>=', value: 31 },
       { operator: '<=', value: 60 },
@@ -51,12 +58,14 @@ const DEFAULT_AGING_BUCKETS: AgingBucketInput[] = [
   },
   {
     name: '61-90',
+    isSpecial: false,
+    combinator: 'AND',
     conditions: [
       { operator: '>=', value: 61 },
       { operator: '<=', value: 90 },
     ],
   },
-  { name: '91+', conditions: [{ operator: '>', value: 90 }] },
+  { name: '91+', isSpecial: false, combinator: 'AND', conditions: [{ operator: '>', value: 90 }] },
 ];
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -192,6 +201,7 @@ async function loadBuiltInThemes(themeRootPath: string, context: ThemeContext) {
     rawThemeMap[parsed.key.trim()] = {
       key: parsed.key.trim(),
       label: parsed.label,
+      createdBy: typeof parsed.createdBy === 'string' ? parsed.createdBy : undefined,
       displayOrder: typeof parsed.displayOrder === 'number' ? parsed.displayOrder : undefined,
       extends: parsed.extends,
       scope: parsed.scope,
@@ -238,9 +248,11 @@ function buildBucketExpressions(buckets: AgingBucketInput[]) {
   const orderParts: string[] = [];
 
   buckets.forEach((bucket, index) => {
-    const condition = bucket.conditions
+    const conditionParts = bucket.conditions
       .map((entry) => `days_past_due ${entry.operator} ${entry.value}`)
-      .join(' AND ');
+      .map((entry) => `(${entry})`);
+    const joiner = bucket.isSpecial && bucket.combinator === 'OR' ? ' OR ' : ' AND ';
+    const condition = conditionParts.join(joiner);
     const label = `'${escapeSqlString(bucket.name)}'`;
     const orderValue = String(index + 1);
 
@@ -264,6 +276,8 @@ function toSafeAgingBuckets(input?: AgingBucketInput[]) {
 
   return input.map((bucket) => ({
     name: bucket.name,
+    isSpecial: bucket.isSpecial,
+    combinator: bucket.combinator,
     conditions: bucket.conditions.map((entry) => ({
       operator: entry.operator,
       value: entry.value,

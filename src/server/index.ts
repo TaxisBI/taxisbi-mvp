@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import { getAgingChart } from "./routes/agingChart";
 
 type BucketOperator = '=' | '<>' | '>=' | '<=' | '>' | '<';
+type BucketCombinator = 'AND' | 'OR';
 
 type AgingBucketConditionInput = {
 	operator: BucketOperator;
@@ -10,11 +11,17 @@ type AgingBucketConditionInput = {
 
 type AgingBucketInput = {
 	name: string;
+	isSpecial: boolean;
+	combinator: BucketCombinator;
 	conditions: AgingBucketConditionInput[];
 };
 
 function isBucketOperator(value: unknown): value is BucketOperator {
 	return value === '=' || value === '<>' || value === '>=' || value === '<=' || value === '>' || value === '<';
+}
+
+function isBucketCombinator(value: unknown): value is BucketCombinator {
+	return value === 'AND' || value === 'OR';
 }
 
 function parseAgingBuckets(input: unknown): AgingBucketInput[] | undefined {
@@ -44,6 +51,8 @@ function parseAgingBuckets(input: unknown): AgingBucketInput[] | undefined {
 
 		const candidate = raw as Record<string, unknown>;
 		const name = typeof candidate.name === "string" ? candidate.name.trim() : "";
+		const isSpecial = candidate.isSpecial === true;
+		const combinator = candidate.combinator === undefined ? 'AND' : candidate.combinator;
 		const rawConditions = candidate.conditions;
 
 		if (!name) {
@@ -56,6 +65,14 @@ function parseAgingBuckets(input: unknown): AgingBucketInput[] | undefined {
 
 		if (!Array.isArray(rawConditions) || rawConditions.length === 0) {
 			throw new Error(`Bucket ${index + 1} must include at least one condition.`);
+		}
+
+		if (!isBucketCombinator(combinator)) {
+			throw new Error(`Bucket ${index + 1} has invalid combinator.`);
+		}
+
+		if (!isSpecial && combinator === 'OR') {
+			throw new Error(`Bucket ${index + 1} can only use OR when marked as special.`);
 		}
 
 		if (rawConditions.length > 2) {
@@ -85,6 +102,8 @@ function parseAgingBuckets(input: unknown): AgingBucketInput[] | undefined {
 
 		return {
 			name,
+			isSpecial,
+			combinator,
 			conditions,
 		};
 	});
