@@ -33,13 +33,22 @@
     {
       "calculate": "datum.AgingBucket === 'Current' ? -1 : toNumber(replace(split(datum.AgingBucket, '-')[0], '+', ''))",
       "as": "AgingBucketSort"
+    },
+    {
+      "calculate": "datum.Balance >= 1000000000 ? replace(format(datum.Balance / 1000000000, '.1f'), '.0', '') + 'b' : datum.Balance >= 1000000 ? replace(format(datum.Balance / 1000000, '.1f'), '.0', '') + 'm' : datum.Balance >= 1000 ? replace(format(datum.Balance / 1000, '.1f'), '.0', '') + 'k' : format(datum.Balance, '.0f')",
+      "as": "BalanceLabel"
     }
   ],
   "layer": [
     {
       "mark": {
         "type": "bar",
-        "cornerRadiusEnd": 8
+        "cornerRadiusEnd": 8,
+        "color": "#4f46e5",
+        "fillOpacity": 0.25,
+        "stroke": "#4f46e5",
+        "strokeOpacity": 1,
+        "strokeWidth": 2
       }
     },
     {
@@ -52,9 +61,8 @@
       },
       "encoding": {
         "text": {
-          "field": "Balance",
-          "type": "quantitative",
-          "format": ",.2f"
+          "field": "BalanceLabel",
+          "type": "nominal"
         }
       }
     }
@@ -67,6 +75,7 @@
       "axis": {
         "grid": true,
         "gridColor": "#d1d5db",
+        "labelExpr": "datum.value >= 1000000000 ? replace(format(datum.value / 1000000000, '.1f'), '.0', '') + 'b' : datum.value >= 1000000 ? replace(format(datum.value / 1000000, '.1f'), '.0', '') + 'm' : datum.value >= 1000 ? replace(format(datum.value / 1000, '.1f'), '.0', '') + 'k' : format(datum.value, '.0f')",
         "gridDash": [
           5,
           5
@@ -86,6 +95,19 @@
         "titlePadding": 22
       },
       "title": "Bucket"
-    }
+    },
+    "tooltip": [
+      {
+        "field": "AgingBucket",
+        "type": "ordinal",
+        "title": "Bucket"
+      },
+      {
+        "field": "Balance",
+        "type": "quantitative",
+        "title": "Balance",
+        "format": "$,.2f"
+      }
+    ]
   }
 }
