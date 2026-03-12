@@ -8,25 +8,11 @@
     "step": 48
   },
   "config": {
-    "font": "Helvetica, Arial, sans-serif",
     "view": {
       "stroke": null
     },
     "axis": {
-      "domain": false,
-      "gridColor": "#d1d5db",
-      "gridDash": [
-        5,
-        5
-      ],
-      "labelFontSize": 14,
-      "titleFontSize": 15,
-      "labelFont": "Helvetica, Arial, sans-serif",
-      "titleFont": "Helvetica, Arial, sans-serif"
-    },
-    "text": {
-      "fontSize": 13,
-      "font": "Helvetica, Arial, sans-serif"
+      "domain": false
     }
   },
   "transform": [
@@ -43,12 +29,7 @@
     {
       "mark": {
         "type": "bar",
-        "cornerRadiusEnd": 8,
-        "color": "#4f46e5",
-        "fillOpacity": 0.25,
-        "stroke": "#4f46e5",
-        "strokeOpacity": 1,
-        "strokeWidth": 2
+        "cornerRadiusEnd": 8
       }
     },
     {
@@ -56,8 +37,7 @@
         "type": "text",
         "align": "left",
         "baseline": "middle",
-        "dx": 4,
-        "color": "#1f2937"
+        "dx": 4
       },
       "encoding": {
         "text": {
@@ -73,13 +53,7 @@
       "type": "quantitative",
       "title": "Receivable Balance",
       "axis": {
-        "grid": true,
-        "gridColor": "#d1d5db",
-        "labelExpr": "datum.value >= 1000000000 ? replace(format(datum.value / 1000000000, '.1f'), '.0', '') + 'b' : datum.value >= 1000000 ? replace(format(datum.value / 1000000, '.1f'), '.0', '') + 'm' : datum.value >= 1000 ? replace(format(datum.value / 1000, '.1f'), '.0', '') + 'k' : format(datum.value, '.0f')",
-        "gridDash": [
-          5,
-          5
-        ]
+        "grid": true
       }
     },
     "y": {

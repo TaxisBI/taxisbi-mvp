@@ -1,0 +1,61 @@
+{
+  "key": "light",
+  "label": "Light",
+  "ui": {
+    "pageBackground": "#f8fafc",
+    "pageText": "#0f172a",
+    "cardBackground": "#ffffff",
+    "cardShadow": "0 8px 24px rgba(15, 23, 42, 0.08)",
+    "buttonBackground": "#ffffff",
+    "buttonText": "#0f172a",
+    "buttonBorder": "#cbd5e1"
+  },
+  "spec": {
+    "background": "#ffffff",
+    "config": {
+      "font": "Helvetica, Arial, sans-serif",
+      "view": { "stroke": null },
+      "axis": {
+        "domain": false,
+        "gridColor": "#d1d5db",
+        "gridDash": [5, 5],
+        "labelFontSize": 14,
+        "titleFontSize": 15,
+        "labelFont": "Helvetica, Arial, sans-serif",
+        "titleFont": "Helvetica, Arial, sans-serif",
+        "labelColor": "#1f2937",
+        "titleColor": "#111827"
+      },
+      "text": {
+        "fontSize": 13,
+        "font": "Helvetica, Arial, sans-serif",
+        "color": "#1f2937"
+      }
+    },
+    "layer": [
+      {
+        "mark": {
+          "color": "#4f46e5",
+          "fillOpacity": 0.25,
+          "stroke": "#4f46e5",
+          "strokeOpacity": 1,
+          "strokeWidth": 2
+        }
+      },
+      {
+        "mark": {
+          "color": "#1f2937"
+        }
+      }
+    ],
+    "encoding": {
+      "x": {
+        "axis": {
+          "grid": true,
+          "gridColor": "#d1d5db",
+          "gridDash": [5, 5]
+        }
+      }
+    }
+  }
+}

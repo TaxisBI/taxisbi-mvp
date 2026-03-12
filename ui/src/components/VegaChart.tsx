@@ -2,17 +2,109 @@ import { VegaEmbed } from 'react-vega';
 import { useEffect, useState } from 'react';
 
 type VegaChartProps = {
-  theme: 'light' | 'dark';
+  theme: string;
+  onThemeCatalogResolved?: (
+    themes: Array<{ key: string; label: string }>,
+    defaultTheme: string
+  ) => void;
+  onUiThemeResolved?: (uiTheme: {
+    pageBackground: string;
+    pageText: string;
+    cardBackground: string;
+    cardShadow: string;
+    buttonBackground: string;
+    buttonText: string;
+    buttonBorder: string;
+  }) => void;
 };
 
-export default function VegaChart({ theme }: VegaChartProps) {
-  const isDark = theme === 'dark';
+type ChartTheme = {
+  key?: string;
+  label?: string;
+  ui?: {
+    pageBackground?: string;
+    pageText?: string;
+    cardBackground?: string;
+    cardShadow?: string;
+    buttonBackground?: string;
+    buttonText?: string;
+    buttonBorder?: string;
+  };
+  spec?: Record<string, any>;
+};
+
+function isObject(value: unknown): value is Record<string, any> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function deepMerge<T>(base: T, override: any): T {
+  if (override === undefined) {
+    return base;
+  }
+
+  if (Array.isArray(base) && Array.isArray(override)) {
+    const maxLength = Math.max(base.length, override.length);
+    const merged = Array.from({ length: maxLength }, (_, index) => {
+      if (index in override) {
+        return deepMerge((base as any[])[index], override[index]);
+      }
+      return (base as any[])[index];
+    });
+    return merged as T;
+  }
+
+  if (isObject(base) && isObject(override)) {
+    const result: Record<string, any> = { ...base };
+    for (const [key, value] of Object.entries(override)) {
+      result[key] = key in result ? deepMerge(result[key], value) : value;
+    }
+    return result as T;
+  }
+
+  return override as T;
+}
+
+export default function VegaChart({
+  theme,
+  onThemeCatalogResolved,
+  onUiThemeResolved,
+}: VegaChartProps) {
+  const [uiTheme, setUiTheme] = useState<{ cardBackground: string; cardShadow: string }>({
+    cardBackground: '#ffffff',
+    cardShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
+  });
   const [spec, setSpec] = useState<any>(null);
 
   useEffect(() => {
     async function loadChart() {
       const res = await fetch('/api/charts/aging-by-bucket');
       const json = await res.json();
+      const themes = (json.themes ?? {}) as Record<string, ChartTheme>;
+      const fallbackThemeKey = (json.defaultTheme as string | undefined) ?? 'light';
+      const themeOptions = Object.entries(themes).map(([key, value]) => ({
+        key,
+        label: value.label ?? key,
+      }));
+      onThemeCatalogResolved?.(themeOptions, fallbackThemeKey);
+      const selectedTheme = themes[theme] ?? themes[fallbackThemeKey] ?? undefined;
+
+      const mergedSpec = selectedTheme?.spec ? deepMerge(json.spec, selectedTheme.spec) : json.spec;
+
+      const resolvedUiTheme = {
+        pageBackground: selectedTheme?.ui?.pageBackground ?? '#f8fafc',
+        pageText: selectedTheme?.ui?.pageText ?? '#0f172a',
+        cardBackground: selectedTheme?.ui?.cardBackground ?? '#ffffff',
+        cardShadow: selectedTheme?.ui?.cardShadow ?? '0 8px 24px rgba(15, 23, 42, 0.08)',
+        buttonBackground: selectedTheme?.ui?.buttonBackground ?? '#ffffff',
+        buttonText: selectedTheme?.ui?.buttonText ?? '#0f172a',
+        buttonBorder: selectedTheme?.ui?.buttonBorder ?? '#cbd5e1',
+      };
+
+      setUiTheme({
+        cardBackground: resolvedUiTheme.cardBackground,
+        cardShadow: resolvedUiTheme.cardShadow,
+      });
+      onUiThemeResolved?.(resolvedUiTheme);
 
       const balances = (json.data ?? [])
         .map((row: any) => Number(row.Balance))
@@ -40,52 +132,15 @@ export default function VegaChart({ theme }: VegaChartProps) {
       }
 
       const fullSpec = {
-        ...json.spec,
+        ...mergedSpec,
         data: { values: json.data },
-        background: isDark ? '#0f172a' : '#ffffff',
-        config: {
-          ...json.spec.config,
-          view: {
-            ...(json.spec.config?.view ?? {}),
-            stroke: null,
-          },
-          axis: {
-            ...(json.spec.config?.axis ?? {}),
-            domain: false,
-            gridColor: isDark ? '#334155' : '#d1d5db',
-            labelColor: isDark ? '#cbd5e1' : '#1f2937',
-            titleColor: isDark ? '#e5e7eb' : '#111827',
-          },
-          text: {
-            ...(json.spec.config?.text ?? {}),
-            color: isDark ? '#e5e7eb' : '#1f2937',
-          },
-        },
-        layer: [
-          {
-            ...json.spec.layer?.[0],
-            mark: {
-              ...json.spec.layer?.[0]?.mark,
-              color: isDark ? '#60a5fa' : '#4f46e5',
-              stroke: isDark ? '#60a5fa' : '#4f46e5',
-            },
-          },
-          {
-            ...json.spec.layer?.[1],
-            mark: {
-              ...json.spec.layer?.[1]?.mark,
-              color: isDark ? '#e5e7eb' : '#1f2937',
-            },
-          },
-        ],
         encoding: {
-          ...json.spec.encoding,
+          ...mergedSpec.encoding,
           x: {
-            ...json.spec.encoding.x,
+            ...mergedSpec.encoding.x,
             title: `Receivable Balance (${unitTitle})`,
             axis: {
-              ...json.spec.encoding.x.axis,
-              gridColor: isDark ? '#334155' : '#d1d5db',
+              ...mergedSpec.encoding?.x?.axis,
               values: axisValues,
               labelExpr: `format(datum.value / ${unit}, '.0f')`
             }
@@ -97,7 +152,7 @@ export default function VegaChart({ theme }: VegaChartProps) {
     }
 
     loadChart();
-  }, [isDark]);
+  }, [theme, onThemeCatalogResolved, onUiThemeResolved]);
 
   if (!spec) {
     return <div>Loading chart...</div>;
@@ -109,11 +164,9 @@ export default function VegaChart({ theme }: VegaChartProps) {
         width: '100%',
         maxWidth: 1200,
         minHeight: 420,
-        background: isDark ? '#0f172a' : '#ffffff',
+        background: uiTheme.cardBackground,
         borderRadius: 12,
-        boxShadow: isDark
-          ? '0 12px 32px rgba(2, 6, 23, 0.45)'
-          : '0 8px 24px rgba(15, 23, 42, 0.08)',
+        boxShadow: uiTheme.cardShadow,
         padding: 16,
         transition: 'background-color 200ms ease, box-shadow 200ms ease',
       }}

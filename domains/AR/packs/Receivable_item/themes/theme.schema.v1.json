@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ChartThemeV1",
+  "type": "object",
+  "required": ["key", "label", "ui", "spec"],
+  "properties": {
+    "key": { "type": "string" },
+    "label": { "type": "string" },
+    "ui": {
+      "type": "object",
+      "required": ["cardBackground", "cardShadow"],
+      "properties": {
+        "pageBackground": { "type": "string" },
+        "pageText": { "type": "string" },
+        "cardBackground": { "type": "string" },
+        "cardShadow": { "type": "string" },
+        "buttonBackground": { "type": "string" },
+        "buttonText": { "type": "string" },
+        "buttonBorder": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "spec": {
+      "type": "object",
+      "description": "Vega-Lite overrides merged with the base chart spec",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
