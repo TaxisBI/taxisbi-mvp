@@ -14,6 +14,7 @@ export type ResolvedUiTheme = {
   buttonBackground: string;
   buttonText: string;
   buttonBorder: string;
+  fontFamily: string;
   tooltipTheme: 'light' | 'dark';
 };
 
@@ -123,6 +124,7 @@ export default function ARAgingBucketChart({
         buttonBackground: selectedTheme?.ui?.buttonBackground ?? '#ffffff',
         buttonText: selectedTheme?.ui?.buttonText ?? '#0f172a',
         buttonBorder: selectedTheme?.ui?.buttonBorder ?? '#cbd5e1',
+        fontFamily: selectedTheme?.ui?.fontFamily ?? 'Helvetica, Arial, sans-serif',
         tooltipTheme: selectedTheme?.ui?.tooltipTheme ?? 'light',
       };
 
@@ -160,6 +162,34 @@ export default function ARAgingBucketChart({
 
       const fullSpec = {
         ...mergedSpec,
+        config: {
+          ...(mergedSpec.config ?? {}),
+          ...(mergedSpec.config?.style ? { style: mergedSpec.config.style } : {}),
+          font: mergedSpec.config?.font ?? resolvedUiTheme.fontFamily,
+          axis: {
+            ...(mergedSpec.config?.axis ?? {}),
+            labelFont: mergedSpec.config?.axis?.labelFont ?? resolvedUiTheme.fontFamily,
+            titleFont: mergedSpec.config?.axis?.titleFont ?? resolvedUiTheme.fontFamily,
+          },
+          legend: {
+            ...(mergedSpec.config?.legend ?? {}),
+            labelFont: mergedSpec.config?.legend?.labelFont ?? resolvedUiTheme.fontFamily,
+            titleFont: mergedSpec.config?.legend?.titleFont ?? resolvedUiTheme.fontFamily,
+          },
+          header: {
+            ...(mergedSpec.config?.header ?? {}),
+            labelFont: mergedSpec.config?.header?.labelFont ?? resolvedUiTheme.fontFamily,
+            titleFont: mergedSpec.config?.header?.titleFont ?? resolvedUiTheme.fontFamily,
+          },
+          title: {
+            ...(mergedSpec.config?.title ?? {}),
+            font: mergedSpec.config?.title?.font ?? resolvedUiTheme.fontFamily,
+          },
+          text: {
+            ...(mergedSpec.config?.text ?? {}),
+            font: mergedSpec.config?.text?.font ?? resolvedUiTheme.fontFamily,
+          },
+        },
         data: { values: json.data },
         encoding: {
           ...mergedSpec.encoding,

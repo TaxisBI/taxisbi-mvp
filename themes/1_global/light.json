@@ -1,6 +1,7 @@
 {
   "key": "light",
   "label": "Light",
+  "displayOrder": 1,
   "scope": "global",
   "ui": {
     "pageBackground": "#f8fafc",
@@ -10,6 +11,7 @@
     "buttonBackground": "#ffffff",
     "buttonText": "#0f172a",
     "buttonBorder": "#cbd5e1",
+    "fontFamily": "Helvetica, Arial, sans-serif",
     "tooltipTheme": "light"
   },
   "spec": {

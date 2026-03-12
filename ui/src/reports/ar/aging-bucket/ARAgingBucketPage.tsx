@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AddRegular,
   CalendarRegular,
@@ -20,6 +20,15 @@ const BUCKET_STORAGE_KEY = 'taxisbi.ui.agingBuckets';
 type BucketOperator = '=' | '<>' | '>=' | '<=' | '>' | '<';
 
 const OPERATOR_OPTIONS: BucketOperator[] = ['=', '<>', '>=', '<=', '>', '<'];
+
+const OPERATOR_LABELS: Record<BucketOperator, string> = {
+  '=': '=',
+  '<>': '!=',
+  '>=': '>=',
+  '<=': '<=',
+  '>': '>',
+  '<': '<',
+};
 
 const DEFAULT_BUCKETS: AgingBucketDef[] = [
   { id: 'b1', name: 'Current', conditions: [{ operator: '<=', value: 0 }] },
@@ -82,6 +91,93 @@ function isValidIsoDate(value: string) {
   }
 
   return parsed.toISOString().slice(0, 10) === value;
+}
+
+type LocaleDateMeta = {
+  order: Array<'day' | 'month' | 'year'>;
+  placeholder: string;
+};
+
+function getLocaleDateMeta(): LocaleDateMeta {
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const parts = formatter.formatToParts(new Date(Date.UTC(2001, 10, 22)));
+  const order = parts
+    .filter((part) => part.type === 'day' || part.type === 'month' || part.type === 'year')
+    .map((part) => part.type) as Array<'day' | 'month' | 'year'>;
+
+  const placeholder = parts
+    .map((part) => {
+      if (part.type === 'day') {
+        return 'dd';
+      }
+      if (part.type === 'month') {
+        return 'mm';
+      }
+      if (part.type === 'year') {
+        return 'yyyy';
+      }
+      return part.value;
+    })
+    .join('');
+
+  return {
+    order: order.length === 3 ? order : ['year', 'month', 'day'],
+    placeholder,
+  };
+}
+
+function formatIsoDateForLocale(isoDate: string) {
+  if (!isValidIsoDate(isoDate)) {
+    return isoDate;
+  }
+
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
+function parseLocaleDateToIso(input: string, meta: LocaleDateMeta): string | null {
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (isValidIsoDate(trimmed)) {
+    return trimmed;
+  }
+
+  const numbers = trimmed.match(/\d+/g);
+  if (!numbers || numbers.length !== 3) {
+    return null;
+  }
+
+  const map: Record<'day' | 'month' | 'year', number> = {
+    day: 0,
+    month: 0,
+    year: 0,
+  };
+
+  meta.order.forEach((part, index) => {
+    map[part] = Number(numbers[index]);
+  });
+
+  let year = map.year;
+  if (year < 100) {
+    year += 2000;
+  }
+
+  const month = map.month;
+  const day = map.day;
+  const iso = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  return isValidIsoDate(iso) ? iso : null;
 }
 
 function parseInteger(value: string): number | null {
@@ -330,7 +426,8 @@ function detectOverlaps(buckets: AgingBucketDef[]) {
 }
 
 export default function ARAgingBucketPage() {
-  const reportDateInputRef = useRef<HTMLInputElement | null>(null);
+  const reportDatePickerRef = useRef<HTMLInputElement | null>(null);
+  const localeDateMeta = useMemo(() => getLocaleDateMeta(), []);
   const [theme, setTheme] = useState<string>(() => {
     if (typeof window === 'undefined') {
       return 'light';
@@ -349,6 +446,9 @@ export default function ARAgingBucketPage() {
     const stored = window.localStorage.getItem(REPORT_DATE_STORAGE_KEY);
     return stored && isValidIsoDate(stored) ? stored : today;
   });
+  const [reportDateDraft, setReportDateDraft] = useState<string>(() =>
+    formatIsoDateForLocale(reportDate)
+  );
   const [buckets, setBuckets] = useState<AgingBucketDef[]>(() => loadStoredBuckets());
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [bucketDraft, setBucketDraft] = useState<BucketDraft[]>(() =>
@@ -364,6 +464,7 @@ export default function ARAgingBucketPage() {
     buttonBackground: '#ffffff',
     buttonText: '#0f172a',
     buttonBorder: '#cbd5e1',
+    fontFamily: 'Helvetica, Arial, sans-serif',
     tooltipTheme: 'light',
   });
 
@@ -383,6 +484,10 @@ export default function ARAgingBucketPage() {
 
   useEffect(() => {
     window.localStorage.setItem(REPORT_DATE_STORAGE_KEY, reportDate);
+  }, [reportDate]);
+
+  useEffect(() => {
+    setReportDateDraft(formatIsoDateForLocale(reportDate));
   }, [reportDate]);
 
   useEffect(() => {
@@ -563,14 +668,19 @@ export default function ARAgingBucketPage() {
   return (
     <>
       <style>{`
-        .date-input-no-native-icon::-webkit-calendar-picker-indicator {
+        .date-picker-hidden-native {
+          position: absolute;
+          width: 1px;
+          height: 1px;
           opacity: 0;
           pointer-events: none;
-          width: 0;
+          border: 0;
+          padding: 0;
           margin: 0;
         }
       `}</style>
       <div
+        className="ar-aging-page"
         style={{
           padding: '32px 40px',
           maxWidth: 1320,
@@ -578,6 +688,7 @@ export default function ARAgingBucketPage() {
           minHeight: '100vh',
           background: uiTheme.pageBackground,
           color: uiTheme.pageText,
+          fontFamily: uiTheme.fontFamily,
           transition: 'background-color 200ms ease, color 200ms ease',
         }}
       >
@@ -596,30 +707,56 @@ export default function ARAgingBucketPage() {
             }}
           >
             <input
-              ref={reportDateInputRef}
-              className="date-input-no-native-icon"
-              type="date"
-              value={reportDate}
-              onChange={(event) => setReportDate(event.target.value)}
+              type="text"
+              value={reportDateDraft}
+              onChange={(event) => {
+                const next = event.target.value;
+                setReportDateDraft(next);
+                const parsedIso = parseLocaleDateToIso(next, localeDateMeta);
+                if (parsedIso) {
+                  setReportDate(parsedIso);
+                }
+              }}
+              onBlur={() => {
+                const parsedIso = parseLocaleDateToIso(reportDateDraft, localeDateMeta);
+                if (!parsedIso) {
+                  setReportDateDraft(formatIsoDateForLocale(reportDate));
+                }
+              }}
               aria-label="Select report date"
+              placeholder={localeDateMeta.placeholder}
+              inputMode="numeric"
               style={{
                 border: 'none',
                 background: 'transparent',
                 color: uiTheme.buttonText,
-                colorScheme: uiTheme.tooltipTheme,
                 padding: '8px 10px',
-                cursor: 'pointer',
+                cursor: 'text',
                 fontSize: 13,
                 fontWeight: 600,
                 outline: 'none',
-                appearance: 'none',
-                WebkitAppearance: 'none',
+                caretColor: uiTheme.buttonText,
               }}
+            />
+            <input
+              ref={reportDatePickerRef}
+              className="date-picker-hidden-native"
+              type="date"
+              value={reportDate}
+              onChange={(event) => {
+                const picked = event.target.value;
+                if (isValidIsoDate(picked)) {
+                  setReportDate(picked);
+                  setReportDateDraft(formatIsoDateForLocale(picked));
+                }
+              }}
+              tabIndex={-1}
+              aria-hidden="true"
             />
             <button
               type="button"
               onClick={() => {
-                const input = reportDateInputRef.current;
+                const input = reportDatePickerRef.current;
                 if (!input) {
                   return;
                 }
@@ -816,16 +953,22 @@ export default function ARAgingBucketPage() {
                             borderRadius: 8,
                             background: '#e2e8f0',
                             color: '#0f172a',
-                            padding: '8px 6px',
-                            fontWeight: 700,
-                            fontSize: 13,
+                            padding: '8px 8px',
+                            fontWeight: 600,
+                            fontSize: 14,
+                            lineHeight: '18px',
+                            letterSpacing: '0.01em',
+                            fontFamily: 'Segoe UI, system-ui, sans-serif',
+                            WebkitFontSmoothing: 'antialiased',
+                            MozOsxFontSmoothing: 'grayscale',
+                            textRendering: 'optimizeLegibility',
                             cursor: 'pointer',
                             minWidth: 64,
                           }}
                         >
                           {OPERATOR_OPTIONS.map((option) => (
                             <option key={`p-${bucket.id}-${option}`} value={option}>
-                              {option}
+                              {OPERATOR_LABELS[option]}
                             </option>
                           ))}
                         </select>
@@ -861,16 +1004,22 @@ export default function ARAgingBucketPage() {
                               borderRadius: 8,
                               background: '#e2e8f0',
                               color: '#0f172a',
-                              padding: '8px 6px',
-                              fontWeight: 700,
-                              fontSize: 13,
+                              padding: '8px 8px',
+                              fontWeight: 600,
+                              fontSize: 14,
+                              lineHeight: '18px',
+                              letterSpacing: '0.01em',
+                              fontFamily: 'Segoe UI, system-ui, sans-serif',
+                              WebkitFontSmoothing: 'antialiased',
+                              MozOsxFontSmoothing: 'grayscale',
+                              textRendering: 'optimizeLegibility',
                               cursor: 'pointer',
                               minWidth: 64,
                             }}
                           >
                             {OPERATOR_OPTIONS.map((option) => (
                               <option key={`s-${bucket.id}-${option}`} value={option}>
-                                {option}
+                                {OPERATOR_LABELS[option]}
                               </option>
                             ))}
                           </select>

@@ -1,6 +1,7 @@
 {
   "key": "dark",
   "label": "Dark",
+  "displayOrder": 2,
   "scope": "global",
   "ui": {
     "pageBackground": "#0b1220",
@@ -10,6 +11,7 @@
     "buttonBackground": "#111827",
     "buttonText": "#e5e7eb",
     "buttonBorder": "#334155",
+    "fontFamily": "Helvetica, Arial, sans-serif",
     "tooltipTheme": "dark"
   },
   "spec": {

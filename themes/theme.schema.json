@@ -6,6 +6,7 @@
   "properties": {
     "key": { "type": "string" },
     "label": { "type": "string" },
+    "displayOrder": { "type": "integer" },
     "extends": { "type": "string" },
     "scope": {
       "type": "string",
@@ -31,6 +32,7 @@
         "buttonBackground": { "type": "string" },
         "buttonText": { "type": "string" },
         "buttonBorder": { "type": "string" },
+        "fontFamily": { "type": "string" },
         "tooltipTheme": { "type": "string", "enum": ["light", "dark"] }
       },
       "additionalProperties": true

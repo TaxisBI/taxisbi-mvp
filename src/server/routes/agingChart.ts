@@ -5,6 +5,7 @@ import { clickhouse } from '../clickhouse/client';
 type ThemeDef = {
   key: string;
   label: string;
+  displayOrder?: number;
   extends?: string;
   scope?: 'global' | 'domain' | 'pack' | 'dashboard';
   appliesTo?: {
@@ -191,6 +192,7 @@ async function loadBuiltInThemes(themeRootPath: string, context: ThemeContext) {
     rawThemeMap[parsed.key.trim()] = {
       key: parsed.key.trim(),
       label: parsed.label,
+      displayOrder: typeof parsed.displayOrder === 'number' ? parsed.displayOrder : undefined,
       extends: parsed.extends,
       scope: parsed.scope,
       appliesTo: parsed.appliesTo,
