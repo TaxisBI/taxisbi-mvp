@@ -176,12 +176,31 @@ async function loadBuiltInThemes(themeRootPath: string, context: ThemeContext) {
   return resolved;
 }
 
-export async function getAgingChart() {
+function isValidIsoDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) {
+    return false;
+  }
+
+  return parsed.toISOString().slice(0, 10) === value;
+}
+
+function getTodayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export async function getAgingChart(reportDateInput?: string) {
   const themeContext: ThemeContext = {
     domain: 'AR',
     pack: 'Receivable_item',
     chart: 'aging_by_bucket',
   };
+  const reportDate =
+    reportDateInput && isValidIsoDate(reportDateInput) ? reportDateInput : getTodayIsoDate();
 
   const sqlPath = path.resolve(
     process.cwd(),
@@ -203,6 +222,9 @@ export async function getAgingChart() {
   const resultSet = await clickhouse.query({
     query: sql,
     format: 'JSONEachRow',
+    query_params: {
+      report_date: reportDate,
+    },
   });
 
   const data = await resultSet.json();
@@ -212,5 +234,6 @@ export async function getAgingChart() {
     data,
     themes,
     defaultTheme,
+    reportDate,
   };
 }

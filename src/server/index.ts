@@ -14,9 +14,10 @@ app.get("/", (_req: Request, res: Response) => {
 	res.send("Express + TypeScript API is running.");
 });
 
-app.get("/api/charts/aging-by-bucket", async (_req: Request, res: Response) => {
+app.get("/api/charts/aging-by-bucket", async (req: Request, res: Response) => {
 	try {
-		const chart = await getAgingChart();
+		const reportDate = typeof req.query.report_date === 'string' ? req.query.report_date : undefined;
+		const chart = await getAgingChart(reportDate);
 		res.status(200).json(chart);
 	} catch (error) {
 		console.error("Failed to load aging chart", error);

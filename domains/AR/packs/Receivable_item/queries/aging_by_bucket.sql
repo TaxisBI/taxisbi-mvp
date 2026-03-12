@@ -1,5 +1,5 @@
 WITH
-    toDate('2025-12-31') AS report_date,
+    {report_date:Date} AS report_date,
 
 base AS
 (
@@ -7,7 +7,7 @@ base AS
         DocumentAmount,
         dateDiff('day', DueDate, report_date) AS days_past_due
     FROM taxisbi.ar_receivable_item
-    WHERE PostingDate <= report_date and PostingDate >= '2025-01-01'
+    WHERE PostingDate <= report_date AND PostingDate >= toStartOfYear(report_date)
 )
 
 SELECT

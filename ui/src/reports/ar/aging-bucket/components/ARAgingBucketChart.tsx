@@ -19,6 +19,7 @@ export type ResolvedUiTheme = {
 
 type ARAgingBucketChartProps = {
   theme: string;
+  reportDate: string;
   onThemeCatalogResolved?: (themes: ThemeOption[], defaultTheme: string) => void;
   onUiThemeResolved?: (uiTheme: ResolvedUiTheme) => void;
 };
@@ -63,6 +64,7 @@ function deepMerge<T>(base: T, override: any): T {
 
 export default function ARAgingBucketChart({
   theme,
+  reportDate,
   onThemeCatalogResolved,
   onUiThemeResolved,
 }: ARAgingBucketChartProps) {
@@ -75,7 +77,8 @@ export default function ARAgingBucketChart({
 
   useEffect(() => {
     async function loadChart() {
-      const res = await fetch('/api/charts/aging-by-bucket');
+      const params = new URLSearchParams({ report_date: reportDate });
+      const res = await fetch(`/api/charts/aging-by-bucket?${params.toString()}`);
       const json = await res.json();
       const themes = (json.themes ?? {}) as Record<string, ChartTheme>;
       const fallbackThemeKey = (json.defaultTheme as string | undefined) ?? 'light';
@@ -152,7 +155,7 @@ export default function ARAgingBucketChart({
     }
 
     loadChart();
-  }, [theme, onThemeCatalogResolved, onUiThemeResolved]);
+  }, [theme, reportDate, onThemeCatalogResolved, onUiThemeResolved]);
 
   if (!spec) {
     return <div>Loading chart...</div>;

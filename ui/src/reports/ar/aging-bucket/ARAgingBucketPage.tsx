@@ -5,6 +5,28 @@ import ARAgingBucketChart, {
 } from './components/ARAgingBucketChart';
 
 const THEME_STORAGE_KEY = 'taxisbi.ui.theme';
+const REPORT_DATE_STORAGE_KEY = 'taxisbi.ui.reportDate';
+
+function getTodayIsoDate() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function isValidIsoDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) {
+    return false;
+  }
+
+  return parsed.toISOString().slice(0, 10) === value;
+}
 
 export default function ARAgingBucketPage() {
   const [theme, setTheme] = useState<string>(() => {
@@ -17,6 +39,14 @@ export default function ARAgingBucketPage() {
     { key: 'light', label: 'Light' },
     { key: 'dark', label: 'Dark' },
   ]);
+  const [reportDate, setReportDate] = useState<string>(() => {
+    const today = getTodayIsoDate();
+    if (typeof window === 'undefined') {
+      return today;
+    }
+    const stored = window.localStorage.getItem(REPORT_DATE_STORAGE_KEY);
+    return stored && isValidIsoDate(stored) ? stored : today;
+  });
   const [uiTheme, setUiTheme] = useState<ResolvedUiTheme>({
     pageBackground: '#f8fafc',
     pageText: '#0f172a',
@@ -42,6 +72,10 @@ export default function ARAgingBucketPage() {
     window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
 
+  useEffect(() => {
+    window.localStorage.setItem(REPORT_DATE_STORAGE_KEY, reportDate);
+  }, [reportDate]);
+
   return (
     <div
       style={{
@@ -54,7 +88,28 @@ export default function ARAgingBucketPage() {
         transition: 'background-color 200ms ease, color 200ms ease',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 14, marginBottom: 12 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>Report Date</span>
+          <input
+            type="date"
+            value={reportDate}
+            onChange={(event) => setReportDate(event.target.value)}
+            aria-label="Select report date"
+            style={{
+              border: '1px solid',
+              borderColor: uiTheme.buttonBorder,
+              background: uiTheme.buttonBackground,
+              color: uiTheme.buttonText,
+              colorScheme: uiTheme.tooltipTheme,
+              borderRadius: 8,
+              padding: '8px 12px',
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          />
+        </label>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 13, fontWeight: 600 }}>Theme</span>
           <select
@@ -84,6 +139,7 @@ export default function ARAgingBucketPage() {
       <h1 style={{ marginTop: 0, marginBottom: 20, textAlign: 'center' }}>AR Aging</h1>
       <ARAgingBucketChart
         theme={theme}
+        reportDate={reportDate}
         onThemeCatalogResolved={handleThemeCatalogResolved}
         onUiThemeResolved={setUiTheme}
       />
