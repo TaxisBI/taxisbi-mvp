@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react';
-import VegaChart from './components/VegaChart';
-
-type ThemeOption = {
-  key: string;
-  label: string;
-};
+import ARAgingBucketChart, {
+  ResolvedUiTheme,
+  ThemeOption,
+} from './components/ARAgingBucketChart';
 
 const THEME_STORAGE_KEY = 'taxisbi.ui.theme';
 
-function App() {
+export default function ARAgingBucketPage() {
   const [theme, setTheme] = useState<string>(() => {
     if (typeof window === 'undefined') {
       return 'light';
@@ -19,12 +17,15 @@ function App() {
     { key: 'light', label: 'Light' },
     { key: 'dark', label: 'Dark' },
   ]);
-  const [uiTheme, setUiTheme] = useState({
+  const [uiTheme, setUiTheme] = useState<ResolvedUiTheme>({
     pageBackground: '#f8fafc',
     pageText: '#0f172a',
+    cardBackground: '#ffffff',
+    cardShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
     buttonBackground: '#ffffff',
     buttonText: '#0f172a',
     buttonBorder: '#cbd5e1',
+    tooltipTheme: 'light',
   });
 
   const handleThemeCatalogResolved = (catalog: ThemeOption[], defaultTheme: string) => {
@@ -81,7 +82,7 @@ function App() {
         </label>
       </div>
       <h1 style={{ marginTop: 0, marginBottom: 20, textAlign: 'center' }}>AR Aging</h1>
-      <VegaChart
+      <ARAgingBucketChart
         theme={theme}
         onThemeCatalogResolved={handleThemeCatalogResolved}
         onUiThemeResolved={setUiTheme}
@@ -89,5 +90,3 @@ function App() {
     </div>
   );
 }
-
-export default App;

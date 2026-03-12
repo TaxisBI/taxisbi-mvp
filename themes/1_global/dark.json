@@ -1,50 +1,52 @@
 {
-  "key": "light",
-  "label": "Light",
+  "key": "dark",
+  "label": "Dark",
+  "scope": "global",
   "ui": {
-    "pageBackground": "#f8fafc",
-    "pageText": "#0f172a",
-    "cardBackground": "#ffffff",
-    "cardShadow": "0 8px 24px rgba(15, 23, 42, 0.08)",
-    "buttonBackground": "#ffffff",
-    "buttonText": "#0f172a",
-    "buttonBorder": "#cbd5e1"
+    "pageBackground": "#0b1220",
+    "pageText": "#e5e7eb",
+    "cardBackground": "#0f172a",
+    "cardShadow": "0 12px 32px rgba(2, 6, 23, 0.45)",
+    "buttonBackground": "#111827",
+    "buttonText": "#e5e7eb",
+    "buttonBorder": "#334155",
+    "tooltipTheme": "dark"
   },
   "spec": {
-    "background": "#ffffff",
+    "background": "#0f172a",
     "config": {
       "font": "Helvetica, Arial, sans-serif",
       "view": { "stroke": null },
       "axis": {
         "domain": false,
-        "gridColor": "#d1d5db",
+        "gridColor": "#334155",
         "gridDash": [5, 5],
         "labelFontSize": 14,
         "titleFontSize": 15,
         "labelFont": "Helvetica, Arial, sans-serif",
         "titleFont": "Helvetica, Arial, sans-serif",
-        "labelColor": "#1f2937",
-        "titleColor": "#111827"
+        "labelColor": "#cbd5e1",
+        "titleColor": "#e5e7eb"
       },
       "text": {
         "fontSize": 13,
         "font": "Helvetica, Arial, sans-serif",
-        "color": "#1f2937"
+        "color": "#e5e7eb"
       }
     },
     "layer": [
       {
         "mark": {
-          "color": "#4f46e5",
+          "color": "#60a5fa",
           "fillOpacity": 0.25,
-          "stroke": "#4f46e5",
+          "stroke": "#60a5fa",
           "strokeOpacity": 1,
           "strokeWidth": 2
         }
       },
       {
         "mark": {
-          "color": "#1f2937"
+          "color": "#e5e7eb"
         }
       }
     ],
@@ -52,7 +54,7 @@
       "x": {
         "axis": {
           "grid": true,
-          "gridColor": "#d1d5db",
+          "gridColor": "#334155",
           "gridDash": [5, 5]
         }
       }

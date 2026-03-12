@@ -1,50 +1,52 @@
 {
-  "key": "ember-dark",
-  "label": "Ember Dark",
+  "key": "light",
+  "label": "Light",
+  "scope": "global",
   "ui": {
-    "pageBackground": "#140d06",
-    "pageText": "#ffe9d6",
-    "cardBackground": "#1f1309",
-    "cardShadow": "0 12px 32px rgba(0, 0, 0, 0.45)",
-    "buttonBackground": "#2a1a0c",
-    "buttonText": "#ffe9d6",
-    "buttonBorder": "#7c4a1f"
+    "pageBackground": "#f8fafc",
+    "pageText": "#0f172a",
+    "cardBackground": "#ffffff",
+    "cardShadow": "0 8px 24px rgba(15, 23, 42, 0.08)",
+    "buttonBackground": "#ffffff",
+    "buttonText": "#0f172a",
+    "buttonBorder": "#cbd5e1",
+    "tooltipTheme": "light"
   },
   "spec": {
-    "background": "#1f1309",
+    "background": "#ffffff",
     "config": {
       "font": "Helvetica, Arial, sans-serif",
       "view": { "stroke": null },
       "axis": {
         "domain": false,
-        "gridColor": "#5a3920",
+        "gridColor": "#d1d5db",
         "gridDash": [5, 5],
         "labelFontSize": 14,
         "titleFontSize": 15,
         "labelFont": "Helvetica, Arial, sans-serif",
         "titleFont": "Helvetica, Arial, sans-serif",
-        "labelColor": "#f6d2b5",
-        "titleColor": "#ffd9b3"
+        "labelColor": "#1f2937",
+        "titleColor": "#111827"
       },
       "text": {
         "fontSize": 13,
         "font": "Helvetica, Arial, sans-serif",
-        "color": "#ffe3c8"
+        "color": "#1f2937"
       }
     },
     "layer": [
       {
         "mark": {
-          "color": "#ff7a00",
+          "color": "#4f46e5",
           "fillOpacity": 0.25,
-          "stroke": "#ff7a00",
+          "stroke": "#4f46e5",
           "strokeOpacity": 1,
           "strokeWidth": 2
         }
       },
       {
         "mark": {
-          "color": "#ffe3c8"
+          "color": "#1f2937"
         }
       }
     ],
@@ -52,7 +54,7 @@
       "x": {
         "axis": {
           "grid": true,
-          "gridColor": "#5a3920",
+          "gridColor": "#d1d5db",
           "gridDash": [5, 5]
         }
       }

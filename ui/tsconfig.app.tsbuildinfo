@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/components/vegachart.tsx"],"version":"5.9.3"}
+{"root":["./src/main.tsx","./src/app/app.tsx","./src/charts/components/vegachartrenderer.tsx","./src/reports/ar/aging-bucket/aragingbucketpage.tsx","./src/reports/ar/aging-bucket/components/aragingbucketchart.tsx"],"version":"5.9.3"}

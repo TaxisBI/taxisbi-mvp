@@ -1,35 +1,32 @@
-import { VegaEmbed } from 'react-vega';
 import { useEffect, useState } from 'react';
+import VegaChartRenderer from '../../../../charts/components/VegaChartRenderer';
 
-type VegaChartProps = {
+export type ThemeOption = {
+  key: string;
+  label: string;
+};
+
+export type ResolvedUiTheme = {
+  pageBackground: string;
+  pageText: string;
+  cardBackground: string;
+  cardShadow: string;
+  buttonBackground: string;
+  buttonText: string;
+  buttonBorder: string;
+  tooltipTheme: 'light' | 'dark';
+};
+
+type ARAgingBucketChartProps = {
   theme: string;
-  onThemeCatalogResolved?: (
-    themes: Array<{ key: string; label: string }>,
-    defaultTheme: string
-  ) => void;
-  onUiThemeResolved?: (uiTheme: {
-    pageBackground: string;
-    pageText: string;
-    cardBackground: string;
-    cardShadow: string;
-    buttonBackground: string;
-    buttonText: string;
-    buttonBorder: string;
-  }) => void;
+  onThemeCatalogResolved?: (themes: ThemeOption[], defaultTheme: string) => void;
+  onUiThemeResolved?: (uiTheme: ResolvedUiTheme) => void;
 };
 
 type ChartTheme = {
   key?: string;
   label?: string;
-  ui?: {
-    pageBackground?: string;
-    pageText?: string;
-    cardBackground?: string;
-    cardShadow?: string;
-    buttonBackground?: string;
-    buttonText?: string;
-    buttonBorder?: string;
-  };
+  ui?: Partial<ResolvedUiTheme>;
   spec?: Record<string, any>;
 };
 
@@ -64,14 +61,15 @@ function deepMerge<T>(base: T, override: any): T {
   return override as T;
 }
 
-export default function VegaChart({
+export default function ARAgingBucketChart({
   theme,
   onThemeCatalogResolved,
   onUiThemeResolved,
-}: VegaChartProps) {
-  const [uiTheme, setUiTheme] = useState<{ cardBackground: string; cardShadow: string }>({
+}: ARAgingBucketChartProps) {
+  const [uiTheme, setUiTheme] = useState({
     cardBackground: '#ffffff',
     cardShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
+    tooltipTheme: 'light' as 'light' | 'dark',
   });
   const [spec, setSpec] = useState<any>(null);
 
@@ -90,7 +88,7 @@ export default function VegaChart({
 
       const mergedSpec = selectedTheme?.spec ? deepMerge(json.spec, selectedTheme.spec) : json.spec;
 
-      const resolvedUiTheme = {
+      const resolvedUiTheme: ResolvedUiTheme = {
         pageBackground: selectedTheme?.ui?.pageBackground ?? '#f8fafc',
         pageText: selectedTheme?.ui?.pageText ?? '#0f172a',
         cardBackground: selectedTheme?.ui?.cardBackground ?? '#ffffff',
@@ -98,11 +96,13 @@ export default function VegaChart({
         buttonBackground: selectedTheme?.ui?.buttonBackground ?? '#ffffff',
         buttonText: selectedTheme?.ui?.buttonText ?? '#0f172a',
         buttonBorder: selectedTheme?.ui?.buttonBorder ?? '#cbd5e1',
+        tooltipTheme: selectedTheme?.ui?.tooltipTheme ?? 'light',
       };
 
       setUiTheme({
         cardBackground: resolvedUiTheme.cardBackground,
         cardShadow: resolvedUiTheme.cardShadow,
+        tooltipTheme: resolvedUiTheme.tooltipTheme,
       });
       onUiThemeResolved?.(resolvedUiTheme);
 
@@ -142,10 +142,10 @@ export default function VegaChart({
             axis: {
               ...mergedSpec.encoding?.x?.axis,
               values: axisValues,
-              labelExpr: `format(datum.value / ${unit}, '.0f')`
-            }
-          }
-        }
+              labelExpr: `format(datum.value / ${unit}, '.0f')`,
+            },
+          },
+        },
       };
 
       setSpec(fullSpec);
@@ -159,19 +159,11 @@ export default function VegaChart({
   }
 
   return (
-    <div
-      style={{
-        width: '100%',
-        maxWidth: 1200,
-        minHeight: 420,
-        background: uiTheme.cardBackground,
-        borderRadius: 12,
-        boxShadow: uiTheme.cardShadow,
-        padding: 16,
-        transition: 'background-color 200ms ease, box-shadow 200ms ease',
-      }}
-    >
-      <VegaEmbed spec={spec} options={{ actions: true }} />
-    </div>
+    <VegaChartRenderer
+      spec={spec}
+      tooltipTheme={uiTheme.tooltipTheme}
+      cardBackground={uiTheme.cardBackground}
+      cardShadow={uiTheme.cardShadow}
+    />
   );
 }

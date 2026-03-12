@@ -1,0 +1,21 @@
+{
+  "key": "ember-dark",
+  "label": "Ember Dark",
+  "scope": "pack",
+  "extends": "dark",
+  "appliesTo": {
+    "domain": ["AR"],
+    "pack": ["Receivable_item"]
+  },
+  "ui": {},
+  "spec": {
+    "layer": [
+      {
+        "mark": {
+          "color": "#ff7a00",
+          "stroke": "#ff7a00"
+        }
+      }
+    ]
+  }
+}

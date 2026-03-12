@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ChartThemeV2",
+  "type": "object",
+  "required": ["key", "label", "scope", "ui", "spec"],
+  "properties": {
+    "key": { "type": "string" },
+    "label": { "type": "string" },
+    "extends": { "type": "string" },
+    "scope": {
+      "type": "string",
+      "enum": ["global", "domain", "pack", "dashboard"]
+    },
+    "appliesTo": {
+      "type": "object",
+      "properties": {
+        "domain": { "type": "array", "items": { "type": "string" } },
+        "pack": { "type": "array", "items": { "type": "string" } },
+        "chart": { "type": "array", "items": { "type": "string" } },
+        "dashboard": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "ui": {
+      "type": "object",
+      "properties": {
+        "pageBackground": { "type": "string" },
+        "pageText": { "type": "string" },
+        "cardBackground": { "type": "string" },
+        "cardShadow": { "type": "string" },
+        "buttonBackground": { "type": "string" },
+        "buttonText": { "type": "string" },
+        "buttonBorder": { "type": "string" },
+        "tooltipTheme": { "type": "string", "enum": ["light", "dark"] }
+      },
+      "additionalProperties": true
+    },
+    "spec": {
+      "type": "object",
+      "description": "Vega-Lite overrides merged on top of base chart spec",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
