@@ -1,0 +1,25 @@
+{
+  "name": "taxisbi-ui",
+  "version": "0.1.0",
+  "private": true,
+  "$comment": "UI workspace package manifest: dependencies and scripts for the Vite React frontend.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-vega": "^8.0.0",
+    "vega-lite": "^6.4.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "^5.8.2",
+    "vite": "^7.1.0"
+  }
+}

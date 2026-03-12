@@ -1,0 +1,11 @@
+{
+  "$comment": "TypeScript settings for Node-side tooling files such as vite.config.ts.",
+  "compilerOptions": {
+    "composite": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["node"],
+    "skipLibCheck": true
+  },
+  "include": ["vite.config.ts"]
+}

@@ -1,15 +1,91 @@
 {
-  "mark": "bar",
+  "autosize": {
+    "type": "fit-x",
+    "contains": "padding"
+  },
+  "width": 980,
+  "height": {
+    "step": 48
+  },
+  "config": {
+    "font": "Helvetica, Arial, sans-serif",
+    "view": {
+      "stroke": null
+    },
+    "axis": {
+      "domain": false,
+      "gridColor": "#d1d5db",
+      "gridDash": [
+        5,
+        5
+      ],
+      "labelFontSize": 14,
+      "titleFontSize": 15,
+      "labelFont": "Helvetica, Arial, sans-serif",
+      "titleFont": "Helvetica, Arial, sans-serif"
+    },
+    "text": {
+      "fontSize": 13,
+      "font": "Helvetica, Arial, sans-serif"
+    }
+  },
+  "transform": [
+    {
+      "calculate": "datum.AgingBucket === 'Current' ? -1 : toNumber(replace(split(datum.AgingBucket, '-')[0], '+', ''))",
+      "as": "AgingBucketSort"
+    }
+  ],
+  "layer": [
+    {
+      "mark": {
+        "type": "bar",
+        "cornerRadiusEnd": 8
+      }
+    },
+    {
+      "mark": {
+        "type": "text",
+        "align": "left",
+        "baseline": "middle",
+        "dx": 4,
+        "color": "#1f2937"
+      },
+      "encoding": {
+        "text": {
+          "field": "Balance",
+          "type": "quantitative",
+          "format": ",.2f"
+        }
+      }
+    }
+  ],
   "encoding": {
     "x": {
-      "field": "AgingBucket",
-      "type": "ordinal",
-      "title": "Aging Bucket"
-    },
-    "y": {
       "field": "Balance",
       "type": "quantitative",
-      "title": "Receivable Balance"
+      "title": "Receivable Balance",
+      "axis": {
+        "grid": true,
+        "gridColor": "#d1d5db",
+        "gridDash": [
+          5,
+          5
+        ]
+      }
+    },
+    "y": {
+      "field": "AgingBucket",
+      "type": "ordinal",
+      "sort": {
+        "field": "AgingBucketSort",
+        "op": "min",
+        "order": "ascending"
+      },
+      "axis": {
+        "titleAngle": 0,
+        "titlePadding": 22
+      },
+      "title": "Bucket"
     }
   }
 }
