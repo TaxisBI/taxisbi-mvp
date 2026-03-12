@@ -4,6 +4,7 @@ import VegaChartRenderer from '../../../../charts/components/VegaChartRenderer';
 export type ThemeOption = {
   key: string;
   label: string;
+  displayOrder?: number;
 };
 
 export type ResolvedUiTheme = {
@@ -38,6 +39,7 @@ export type AgingBucketDef = {
 type ChartTheme = {
   key?: string;
   label?: string;
+  displayOrder?: number;
   ui?: Partial<ResolvedUiTheme>;
   spec?: Record<string, any>;
 };
@@ -71,6 +73,19 @@ function deepMerge<T>(base: T, override: any): T {
   }
 
   return override as T;
+}
+
+function fallbackThemeOrder(key: string) {
+  if (key === 'light') {
+    return 1;
+  }
+  if (key === 'dark') {
+    return 2;
+  }
+  if (key === 'ember-dark') {
+    return 3;
+  }
+  return 999;
 }
 
 export default function ARAgingBucketChart({
@@ -107,10 +122,20 @@ export default function ARAgingBucketChart({
 
       const themes = (json.themes ?? {}) as Record<string, ChartTheme>;
       const fallbackThemeKey = (json.defaultTheme as string | undefined) ?? 'light';
-      const themeOptions = Object.entries(themes).map(([key, value]) => ({
-        key,
-        label: value.label ?? key,
-      }));
+      const themeOptions = Object.entries(themes)
+        .map(([key, value]) => ({
+          key,
+          label: value.label ?? key,
+          displayOrder: value.displayOrder,
+        }))
+        .sort((left, right) => {
+          const leftOrder = left.displayOrder ?? fallbackThemeOrder(left.key);
+          const rightOrder = right.displayOrder ?? fallbackThemeOrder(right.key);
+          if (leftOrder !== rightOrder) {
+            return leftOrder - rightOrder;
+          }
+          return left.label.localeCompare(right.label);
+        });
       onThemeCatalogResolved?.(themeOptions, fallbackThemeKey);
       const selectedTheme = themes[theme] ?? themes[fallbackThemeKey] ?? undefined;
 
