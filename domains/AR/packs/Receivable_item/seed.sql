@@ -26,7 +26,7 @@ WITH documents AS
     SELECT
         number AS doc_id,
         '100' AS client,
-        toUInt16(2024 + (number % 2)) AS fiscal_year,
+        toUInt16(2024 + (number % 3)) AS fiscal_year,
         concat('C', toString(1000 + (number % 12))) AS company_code,
         if(number % 29 = 0, NULL, concat('Company ', toString(1000 + (number % 12)))) AS company_desc,
         concat('CUST', toString(7000000 + (cityHash64(number, 'cust_code') % 900000))) AS customer_code,
@@ -35,9 +35,12 @@ WITH documents AS
         arrayElement(['N15', 'N30', 'N60', 'N90'], (number % 4) + 1) AS payment_terms,
         toUInt16(toInt32(substring(arrayElement(['N15', 'N30', 'N60', 'N90'], (number % 4) + 1), 2))) AS payment_days,
         concat('INV', toString(1000000 + number)) AS document_number,
-        today() - toIntervalDay(number % 180) AS document_posting_date,
+        (
+            toDate(concat(toString(2024 + (number % 3)), '-01-01'))
+            + toIntervalDay(cityHash64(number, 'posting_day_of_year') % 320)
+        ) AS document_posting_date,
         toUInt8((number % 7) + 1) AS line_count
-    FROM numbers(12000)
+    FROM numbers(50001)
 ),
 expanded AS
 (
