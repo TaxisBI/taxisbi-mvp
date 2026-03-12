@@ -9,7 +9,9 @@
     "domain": ["AR"],
     "pack": ["Receivable_item"]
   },
-  "ui": {},
+  "ui": {
+    "hoverColor": "#22c55e"
+  },
   "spec": {
     "layer": [
       {

@@ -27,6 +27,7 @@ export type ResolvedUiTheme = {
   buttonBackground: string;
   buttonText: string;
   buttonBorder: string;
+  hoverColor: string;
   fontFamily: string;
   modalOverlayBackground: string;
   statusDanger: string;
@@ -177,6 +178,7 @@ export default function ARAgingBucketChart({
         buttonBackground: selectedTheme?.ui?.buttonBackground ?? '#ffffff',
         buttonText: selectedTheme?.ui?.buttonText ?? '#0f172a',
         buttonBorder: selectedTheme?.ui?.buttonBorder ?? '#cbd5e1',
+        hoverColor: selectedTheme?.ui?.hoverColor ?? '#22c55e',
         fontFamily: selectedTheme?.ui?.fontFamily ?? 'Helvetica, Arial, sans-serif',
         modalOverlayBackground:
           selectedTheme?.ui?.modalOverlayBackground ?? 'rgba(15, 23, 42, 0.45)',

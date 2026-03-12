@@ -33,6 +33,7 @@
         "buttonBackground": { "type": "string" },
         "buttonText": { "type": "string" },
         "buttonBorder": { "type": "string" },
+        "hoverColor": { "type": "string" },
         "fontFamily": { "type": "string" },
         "modalOverlayBackground": { "type": "string" },
         "statusDanger": { "type": "string" },

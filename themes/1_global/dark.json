@@ -12,6 +12,7 @@
     "buttonBackground": "#111827",
     "buttonText": "#e5e7eb",
     "buttonBorder": "#334155",
+    "hoverColor": "#22c55e",
     "fontFamily": "Helvetica, Arial, sans-serif",
     "modalOverlayBackground": "rgba(2, 6, 23, 0.68)",
     "statusDanger": "#f87171",

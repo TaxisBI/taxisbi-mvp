@@ -762,6 +762,7 @@ export default function ARAgingBucketPage() {
     buttonBackground: '#ffffff',
     buttonText: '#0f172a',
     buttonBorder: '#cbd5e1',
+    hoverColor: '#22c55e',
     fontFamily: 'Helvetica, Arial, sans-serif',
     modalOverlayBackground: 'rgba(15, 23, 42, 0.45)',
     statusDanger: '#dc2626',
