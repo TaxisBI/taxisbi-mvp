@@ -17,6 +17,42 @@
     "modalOverlayBackground": "rgba(2, 6, 23, 0.68)",
     "statusDanger": "#f87171",
     "statusSuccess": "#4ade80",
+    "chartBarDefaultColor": "#60a5fa",
+    "chartBarHoverColor": "#22c55e",
+    "chartBarDefaultOpacity": 0.72,
+    "chartBarHoverOpacity": 1,
+    "chartBarDefaultStrokeColor": "#60a5fa",
+    "chartBarHoverStrokeColor": "#22c55e",
+    "chartBarDefaultStrokeOpacity": 1,
+    "chartBarHoverStrokeOpacity": 1,
+    "chartBarDefaultStrokeWidth": 2,
+    "chartBarHoverStrokeWidth": 3,
+    "colorTokens": {
+      "mono": {
+        "primary": { "light": "#4f46e5", "dark": "#60a5fa" },
+        "secondary": { "light": "#475569", "dark": "#94a3b8" },
+        "accent": { "light": "#0ea5e9", "dark": "#22d3ee" }
+      },
+      "multi": {
+        "categorical": {
+          "light": ["#4f46e5", "#0ea5e9", "#16a34a", "#d97706", "#dc2626", "#be185d"],
+          "dark": ["#60a5fa", "#22d3ee", "#4ade80", "#fbbf24", "#f87171", "#f472b6"]
+        },
+        "sequential": {
+          "light": ["#dbeafe", "#93c5fd", "#3b82f6", "#1d4ed8"],
+          "dark": ["#1e3a8a", "#2563eb", "#60a5fa", "#bfdbfe"]
+        }
+      },
+      "sentiment": {
+        "positive": { "light": "#16a34a", "dark": "#4ade80" },
+        "neutral": { "light": "#64748b", "dark": "#94a3b8" },
+        "negative": { "light": "#dc2626", "dark": "#f87171" }
+      },
+      "status": {
+        "error": { "light": "#dc2626", "dark": "#f87171" },
+        "warning": { "light": "#d97706", "dark": "#fbbf24" }
+      }
+    },
     "overlapPalette": [
       { "border": "#f87171", "background": "#3f1d1d" },
       { "border": "#fbbf24", "background": "#3b2c14" },

@@ -32,6 +32,16 @@ export type ResolvedUiTheme = {
   modalOverlayBackground: string;
   statusDanger: string;
   statusSuccess: string;
+  chartBarDefaultColor: string;
+  chartBarHoverColor: string;
+  chartBarDefaultOpacity: number;
+  chartBarHoverOpacity: number;
+  chartBarDefaultStrokeColor: string;
+  chartBarHoverStrokeColor: string;
+  chartBarDefaultStrokeOpacity: number;
+  chartBarHoverStrokeOpacity: number;
+  chartBarDefaultStrokeWidth: number;
+  chartBarHoverStrokeWidth: number;
   overlapPalette: Array<{ border: string; background: string }>;
   tooltipTheme: 'light' | 'dark';
 };
@@ -184,6 +194,39 @@ export default function ARAgingBucketChart({
           selectedTheme?.ui?.modalOverlayBackground ?? 'rgba(15, 23, 42, 0.45)',
         statusDanger: selectedTheme?.ui?.statusDanger ?? '#dc2626',
         statusSuccess: selectedTheme?.ui?.statusSuccess ?? '#16a34a',
+        chartBarDefaultColor: selectedTheme?.ui?.chartBarDefaultColor ?? '#4f46e5',
+        chartBarHoverColor:
+          selectedTheme?.ui?.chartBarHoverColor ?? selectedTheme?.ui?.hoverColor ?? '#22c55e',
+        chartBarDefaultOpacity:
+          typeof selectedTheme?.ui?.chartBarDefaultOpacity === 'number'
+            ? selectedTheme.ui.chartBarDefaultOpacity
+            : 0.72,
+        chartBarHoverOpacity:
+          typeof selectedTheme?.ui?.chartBarHoverOpacity === 'number'
+            ? selectedTheme.ui.chartBarHoverOpacity
+            : 1,
+        chartBarDefaultStrokeColor: selectedTheme?.ui?.chartBarDefaultStrokeColor ?? '#4f46e5',
+        chartBarHoverStrokeColor:
+          selectedTheme?.ui?.chartBarHoverStrokeColor ??
+          selectedTheme?.ui?.chartBarHoverColor ??
+          selectedTheme?.ui?.hoverColor ??
+          '#22c55e',
+        chartBarDefaultStrokeOpacity:
+          typeof selectedTheme?.ui?.chartBarDefaultStrokeOpacity === 'number'
+            ? selectedTheme.ui.chartBarDefaultStrokeOpacity
+            : 1,
+        chartBarHoverStrokeOpacity:
+          typeof selectedTheme?.ui?.chartBarHoverStrokeOpacity === 'number'
+            ? selectedTheme.ui.chartBarHoverStrokeOpacity
+            : 1,
+        chartBarDefaultStrokeWidth:
+          typeof selectedTheme?.ui?.chartBarDefaultStrokeWidth === 'number'
+            ? selectedTheme.ui.chartBarDefaultStrokeWidth
+            : 2,
+        chartBarHoverStrokeWidth:
+          typeof selectedTheme?.ui?.chartBarHoverStrokeWidth === 'number'
+            ? selectedTheme.ui.chartBarHoverStrokeWidth
+            : 3,
         overlapPalette: Array.isArray(selectedTheme?.ui?.overlapPalette)
           ? (selectedTheme?.ui?.overlapPalette as Array<{ border: string; background: string }>).filter(
               (entry) =>
@@ -247,6 +290,26 @@ export default function ARAgingBucketChart({
 
       const ratioSize = ratioSizeMap[canvasSizeMode];
 
+      const firstLayer = Array.isArray(mergedSpec.layer) ? mergedSpec.layer[0] : undefined;
+      const hasHoverParam = Array.isArray(firstLayer?.params)
+        ? firstLayer.params.some((entry: any) => entry?.name === 'barHoverLocal')
+        : false;
+      const barDefaultColorFromSpec =
+        typeof firstLayer?.mark?.color === 'string' ? firstLayer.mark.color : undefined;
+      const barDefaultStrokeColorFromSpec =
+        typeof firstLayer?.mark?.stroke === 'string' ? firstLayer.mark.stroke : undefined;
+      const barDefaultStrokeOpacityFromSpec =
+        typeof firstLayer?.mark?.strokeOpacity === 'number' ? firstLayer.mark.strokeOpacity : undefined;
+      const barDefaultStrokeWidthFromSpec =
+        typeof firstLayer?.mark?.strokeWidth === 'number' ? firstLayer.mark.strokeWidth : undefined;
+      const chartBarDefaultColor = barDefaultColorFromSpec ?? resolvedUiTheme.chartBarDefaultColor;
+      const chartBarDefaultStrokeColor =
+        barDefaultStrokeColorFromSpec ?? resolvedUiTheme.chartBarDefaultStrokeColor;
+      const chartBarDefaultStrokeOpacity =
+        barDefaultStrokeOpacityFromSpec ?? resolvedUiTheme.chartBarDefaultStrokeOpacity;
+      const chartBarDefaultStrokeWidth =
+        barDefaultStrokeWidthFromSpec ?? resolvedUiTheme.chartBarDefaultStrokeWidth;
+
       const fullSpec = {
         ...mergedSpec,
         ...(ratioSize
@@ -285,6 +348,71 @@ export default function ARAgingBucketChart({
           },
         },
         data: { values: json.data },
+        layer: Array.isArray(mergedSpec.layer)
+          ? mergedSpec.layer.map((layerEntry: any, layerIndex: number) => {
+              if (layerIndex !== 0) {
+                return layerEntry;
+              }
+
+              const existingParams = Array.isArray(layerEntry?.params) ? layerEntry.params : [];
+
+              return {
+                ...layerEntry,
+                params: hasHoverParam
+                  ? existingParams
+                  : [
+                      ...existingParams,
+                      {
+                        name: 'barHoverLocal',
+                        select: {
+                          type: 'point',
+                          fields: ['AgingBucket'],
+                          on: 'mouseover',
+                          clear: 'mouseout',
+                        },
+                      },
+                    ],
+                encoding: {
+                  ...(layerEntry?.encoding ?? {}),
+                  color: {
+                    condition: {
+                      param: 'barHoverLocal',
+                      value: resolvedUiTheme.chartBarHoverColor,
+                    },
+                    value: chartBarDefaultColor,
+                  },
+                  opacity: {
+                    condition: {
+                      param: 'barHoverLocal',
+                      value: resolvedUiTheme.chartBarHoverOpacity,
+                    },
+                    value: resolvedUiTheme.chartBarDefaultOpacity,
+                  },
+                  stroke: {
+                    condition: {
+                      param: 'barHoverLocal',
+                      value: resolvedUiTheme.chartBarHoverStrokeColor,
+                    },
+                    value: chartBarDefaultStrokeColor,
+                  },
+                  strokeOpacity: {
+                    condition: {
+                      param: 'barHoverLocal',
+                      value: resolvedUiTheme.chartBarHoverStrokeOpacity,
+                    },
+                    value: chartBarDefaultStrokeOpacity,
+                  },
+                  strokeWidth: {
+                    condition: {
+                      param: 'barHoverLocal',
+                      value: resolvedUiTheme.chartBarHoverStrokeWidth,
+                    },
+                    value: chartBarDefaultStrokeWidth,
+                  },
+                },
+              };
+            })
+          : mergedSpec.layer,
         encoding: {
           ...mergedSpec.encoding,
           y: {

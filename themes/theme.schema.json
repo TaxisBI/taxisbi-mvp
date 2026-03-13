@@ -38,6 +38,136 @@
         "modalOverlayBackground": { "type": "string" },
         "statusDanger": { "type": "string" },
         "statusSuccess": { "type": "string" },
+        "chartBarDefaultColor": { "type": "string" },
+        "chartBarHoverColor": { "type": "string" },
+        "chartBarDefaultOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "chartBarHoverOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "chartBarDefaultStrokeColor": { "type": "string" },
+        "chartBarHoverStrokeColor": { "type": "string" },
+        "chartBarDefaultStrokeOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "chartBarHoverStrokeOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "chartBarDefaultStrokeWidth": { "type": "number", "minimum": 0 },
+        "chartBarHoverStrokeWidth": { "type": "number", "minimum": 0 },
+        "colorTokens": {
+          "type": "object",
+          "properties": {
+            "mono": {
+              "type": "object",
+              "properties": {
+                "primary": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "string" },
+                    "dark": { "type": "string" }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                },
+                "secondary": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "string" },
+                    "dark": { "type": "string" }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                },
+                "accent": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "string" },
+                    "dark": { "type": "string" }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": true
+            },
+            "multi": {
+              "type": "object",
+              "properties": {
+                "categorical": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "array", "items": { "type": "string" } },
+                    "dark": { "type": "array", "items": { "type": "string" } }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                },
+                "sequential": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "array", "items": { "type": "string" } },
+                    "dark": { "type": "array", "items": { "type": "string" } }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": true
+            },
+            "sentiment": {
+              "type": "object",
+              "properties": {
+                "positive": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "string" },
+                    "dark": { "type": "string" }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                },
+                "neutral": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "string" },
+                    "dark": { "type": "string" }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                },
+                "negative": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "string" },
+                    "dark": { "type": "string" }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": true
+            },
+            "status": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "string" },
+                    "dark": { "type": "string" }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                },
+                "warning": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "string" },
+                    "dark": { "type": "string" }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
+        },
         "overlapPalette": {
           "type": "array",
           "items": {

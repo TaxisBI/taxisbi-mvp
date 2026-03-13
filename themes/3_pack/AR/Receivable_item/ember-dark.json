@@ -10,7 +10,26 @@
     "pack": ["Receivable_item"]
   },
   "ui": {
-    "hoverColor": "#22c55e"
+    "hoverColor": "#22c55e",
+    "chartBarDefaultColor": "#ff7a00",
+    "chartBarHoverColor": "#ffd166",
+    "chartBarDefaultOpacity": 0.7,
+    "chartBarHoverOpacity": 1,
+    "chartBarDefaultStrokeColor": "#ff7a00",
+    "chartBarHoverStrokeColor": "#ffd166",
+    "chartBarDefaultStrokeOpacity": 1,
+    "chartBarHoverStrokeOpacity": 1,
+    "chartBarDefaultStrokeWidth": 2,
+    "chartBarHoverStrokeWidth": 3,
+    "colorTokens": {
+      "mono": {
+        "primary": { "light": "#ff7a00", "dark": "#ffd166" },
+        "accent": { "light": "#ff9f43", "dark": "#ffb347" }
+      },
+      "status": {
+        "warning": { "light": "#ff9f43", "dark": "#ffd166" }
+      }
+    }
   },
   "spec": {
     "layer": [

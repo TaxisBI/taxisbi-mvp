@@ -21,6 +21,34 @@ Each theme can define:
 - `ui`: UI token overrides.
 - `spec`: Vega-Lite overrides.
 
+### UI tokens for report bars
+
+Themes can define hover visuals for report bar charts under `ui`:
+
+- `chartBarDefaultColor`
+- `chartBarHoverColor`
+- `chartBarDefaultOpacity`
+- `chartBarHoverOpacity`
+- `chartBarDefaultStrokeColor`
+- `chartBarHoverStrokeColor`
+- `chartBarDefaultStrokeOpacity`
+- `chartBarHoverStrokeOpacity`
+- `chartBarDefaultStrokeWidth`
+- `chartBarHoverStrokeWidth`
+
+These tokens are consumed by AR aging chart rendering so the active theme controls bar hover behavior.
+
+### Reusable color token scaffold
+
+Themes can also define reusable color families under `ui.colorTokens` for chart element mapping:
+
+- `mono`: monocolor hex values with `light`/`dark` variants.
+- `multi`: multi-color hex arrays with `light`/`dark` variants.
+- `sentiment`: `positive` / `neutral` / `negative` with `light`/`dark` variants.
+- `status`: `error` and `warning` with `light`/`dark` variants.
+
+These tokens are intended as a shared palette contract so users can map theme-selected colors to any Vega/Vega-Lite element that accepts colors.
+
 ### appliesTo
 
 `appliesTo` can include one or more of:
