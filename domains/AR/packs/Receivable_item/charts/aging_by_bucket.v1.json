@@ -27,9 +27,29 @@
   ],
   "layer": [
     {
+      "params": [
+        {
+          "name": "barHoverLocal",
+          "select": {
+            "type": "point",
+            "fields": ["AgingBucket"],
+            "on": "mouseover",
+            "clear": "mouseout"
+          }
+        }
+      ],
       "mark": {
         "type": "bar",
         "cornerRadiusEnd": 8
+      },
+      "encoding": {
+        "opacity": {
+          "condition": {
+            "param": "barHoverLocal",
+            "value": 1
+          },
+          "value": 0.72
+        }
       }
     },
     {

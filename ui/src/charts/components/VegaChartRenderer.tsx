@@ -1,4 +1,4 @@
-import { Component, ReactNode } from 'react';
+import { Component, ReactNode, useEffect, useState } from 'react';
 import { VegaEmbed } from 'react-vega';
 import type { CanvasSizeMode } from '../../reports/ar/aging-bucket/components/ARAgingBucketChart';
 
@@ -66,6 +66,12 @@ export default function VegaChartRenderer({
   canvasSizeMode = 'fit-width',
   customCanvasSize = { width: 1280, height: 720 },
 }: VegaChartRendererProps) {
+  const [embedErrorMessage, setEmbedErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setEmbedErrorMessage(null);
+  }, [spec]);
+
   const layoutByMode: Record<
     CanvasSizeMode,
     {
@@ -112,8 +118,32 @@ export default function VegaChartRenderer({
         transition: 'background-color 200ms ease, box-shadow 200ms ease',
       }}
     >
+      {embedErrorMessage ? (
+        <div
+          style={{
+            border: '1px solid #fecaca',
+            background: '#fff1f2',
+            color: '#881337',
+            borderRadius: 8,
+            padding: 12,
+            fontSize: 13,
+            lineHeight: 1.45,
+            whiteSpace: 'pre-wrap',
+          }}
+        >
+          {`Chart embed error: ${embedErrorMessage}`}
+        </div>
+      ) : null}
       <ChartErrorBoundary>
-        <VegaEmbed spec={spec} options={{ actions: true, tooltip: { theme: tooltipTheme } }} />
+        <VegaEmbed
+          spec={spec}
+          options={{ actions: true, tooltip: { theme: tooltipTheme } }}
+          onError={(error) => {
+            const message = error instanceof Error ? error.message : String(error);
+            console.error('[VegaChartRenderer] embed failed:', error);
+            setEmbedErrorMessage(message);
+          }}
+        />
       </ChartErrorBoundary>
     </div>
   );
