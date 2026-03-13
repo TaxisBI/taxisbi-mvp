@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { clickhouse } from '../clickhouse/client';
 
-type ThemeDef = {
+export type ThemeDef = {
   key: string;
   label: string;
   createdBy?: string;
@@ -19,7 +19,7 @@ type ThemeDef = {
   spec: Record<string, unknown>;
 };
 
-type ThemeContext = {
+export type ThemeContext = {
   domain: string;
   pack: string;
   chart: string;
@@ -180,7 +180,7 @@ function resolveTheme(
   };
 }
 
-async function loadBuiltInThemes(themeRootPath: string, context: ThemeContext) {
+export async function loadBuiltInThemes(themeRootPath: string, context: ThemeContext) {
   const allThemeFiles = await collectJsonFilesRecursively(themeRootPath);
   const rawThemeMap: Record<string, ThemeDef> = {};
 
@@ -290,6 +290,7 @@ export async function getAgingChart(reportDateInput?: string, bucketDefsInput?: 
     domain: 'AR',
     pack: 'Receivable_item',
     chart: 'aging_by_bucket',
+    dashboard: 'ar-aging-bucket',
   };
   const reportDate =
     reportDateInput && isValidIsoDate(reportDateInput) ? reportDateInput : getTodayIsoDate();

@@ -8,25 +8,19 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks: function (id) {
-                    if (!id.includes('node_modules')) {
-                        return;
+                    if (typeof id !== 'string' || !id.includes('node_modules')) {
+                        return undefined;
                     }
-                    if (id.includes('vega') || id.includes('react-vega')) {
-                        if (id.includes('vega-lite')) {
-                            return 'vega-lite-vendor';
-                        }
-                        if (id.includes('/vega/') || id.includes('\\vega\\')) {
-                            return 'vega-core-vendor';
-                        }
-                        if (id.includes('d3-')) {
-                            return 'd3-vendor';
-                        }
-                        return 'vega-vendor';
+                    if (id.includes('node_modules/vega-lite/') || id.includes('node_modules\\vega-lite\\')) {
+                        return 'vega-lite-vendor';
                     }
-                    if (id.includes('@fluentui')) {
+                    if (id.includes('node_modules/vega/') || id.includes('node_modules\\vega\\') || id.includes('react-vega')) {
+                        return 'vega-core-vendor';
+                    }
+                    if (id.includes('@fluentui/react-components') || id.includes('@fluentui/react-icons')) {
                         return 'fluent-vendor';
                     }
-                    if (id.includes('react')) {
+                    if (id.includes('node_modules/react/') || id.includes('node_modules\\react\\') || id.includes('node_modules/react-dom/') || id.includes('node_modules\\react-dom\\')) {
                         return 'react-vendor';
                     }
                     return 'vendor';

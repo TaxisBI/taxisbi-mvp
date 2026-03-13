@@ -8,11 +8,28 @@ export default defineConfig({
     chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'fluent-vendor': ['@fluentui/react-components', '@fluentui/react-icons'],
-          'vega-core-vendor': ['vega', 'react-vega'],
-          'vega-lite-vendor': ['vega-lite'],
+        manualChunks(id) {
+          if (typeof id !== 'string' || !id.includes('node_modules')) {
+            return undefined;
+          }
+
+          if (id.includes('node_modules/vega-lite/') || id.includes('node_modules\\vega-lite\\')) {
+            return 'vega-lite-vendor';
+          }
+
+          if (id.includes('node_modules/vega/') || id.includes('node_modules\\vega\\') || id.includes('react-vega')) {
+            return 'vega-core-vendor';
+          }
+
+          if (id.includes('@fluentui/react-components') || id.includes('@fluentui/react-icons')) {
+            return 'fluent-vendor';
+          }
+
+          if (id.includes('node_modules/react/') || id.includes('node_modules\\react\\') || id.includes('node_modules/react-dom/') || id.includes('node_modules\\react-dom\\')) {
+            return 'react-vendor';
+          }
+
+          return 'vendor';
         },
       },
     },

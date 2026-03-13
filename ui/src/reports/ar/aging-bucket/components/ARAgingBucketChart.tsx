@@ -19,6 +19,23 @@ export type ThemeOption = {
   displayOrder?: number;
 };
 
+export type ThemeDefinition = {
+  key?: string;
+  label?: string;
+  scope?: 'global' | 'domain' | 'pack' | 'dashboard';
+  createdBy?: string;
+  displayOrder?: number;
+  extends?: string;
+  appliesTo?: {
+    domain?: string[];
+    pack?: string[];
+    chart?: string[];
+    dashboard?: string[];
+  };
+  ui?: Record<string, unknown>;
+  spec?: Record<string, unknown>;
+};
+
 export type ResolvedUiTheme = {
   pageBackground: string;
   pageText: string;
@@ -55,6 +72,11 @@ type ARAgingBucketChartProps = {
   customCanvasSize: { width: number; height: number };
   onThemeCatalogResolved?: (themes: ThemeOption[], defaultTheme: string) => void;
   onUiThemeResolved?: (uiTheme: ResolvedUiTheme) => void;
+  onThemeDefinitionsResolved?: (
+    themes: Record<string, ThemeDefinition>,
+    selectedThemeKey: string,
+    defaultThemeKey: string
+  ) => void;
 };
 
 export type AgingBucketDef = {
@@ -66,16 +88,6 @@ export type AgingBucketDef = {
     operator: '=' | '<>' | '>=' | '<=' | '>' | '<';
     value: number;
   }>;
-};
-
-type ChartTheme = {
-  key?: string;
-  label?: string;
-  scope?: 'global' | 'domain' | 'pack' | 'dashboard';
-  createdBy?: string;
-  displayOrder?: number;
-  ui?: Partial<ResolvedUiTheme>;
-  spec?: Record<string, any>;
 };
 
 function isObject(value: unknown): value is Record<string, any> {
@@ -130,6 +142,7 @@ export default function ARAgingBucketChart({
   customCanvasSize,
   onThemeCatalogResolved,
   onUiThemeResolved,
+  onThemeDefinitionsResolved,
 }: ARAgingBucketChartProps) {
   const [uiTheme, setUiTheme] = useState({
     cardBackground: '',
@@ -158,7 +171,7 @@ export default function ARAgingBucketChart({
         throw new Error(typeof json?.error === 'string' ? json.error : 'Failed to load chart');
       }
 
-      const themes = (json.themes ?? {}) as Record<string, ChartTheme>;
+      const themes = (json.themes ?? {}) as Record<string, ThemeDefinition>;
       const fallbackThemeKey = (json.defaultTheme as string | undefined) ?? 'light';
       const themeOptions = Object.entries(themes)
         .map(([key, value]) => ({
@@ -178,9 +191,16 @@ export default function ARAgingBucketChart({
         });
       onThemeCatalogResolved?.(themeOptions, fallbackThemeKey);
       const selectedTheme = themes[theme] ?? themes[fallbackThemeKey] ?? undefined;
+      const selectedThemeKey = themes[theme]
+        ? theme
+        : themes[fallbackThemeKey]
+          ? fallbackThemeKey
+          : Object.keys(themes)[0] ?? fallbackThemeKey;
       const fallbackTheme = themes[fallbackThemeKey] ?? themes.light ?? Object.values(themes)[0];
-      const selectedUi = selectedTheme?.ui ?? {};
-      const fallbackUi = fallbackTheme?.ui ?? {};
+      const selectedUi = (selectedTheme?.ui ?? {}) as Record<string, unknown>;
+      const fallbackUi = (fallbackTheme?.ui ?? {}) as Record<string, unknown>;
+
+      onThemeDefinitionsResolved?.(themes, selectedThemeKey, fallbackThemeKey);
 
       const mergedSpec = selectedTheme?.spec ? deepMerge(json.spec, selectedTheme.spec) : json.spec;
 
@@ -487,6 +507,7 @@ export default function ARAgingBucketChart({
     customCanvasSize,
     onThemeCatalogResolved,
     onUiThemeResolved,
+    onThemeDefinitionsResolved,
   ]);
 
   if (!spec) {

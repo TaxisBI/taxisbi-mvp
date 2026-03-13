@@ -18,6 +18,7 @@ import ARAgingBucketChart, {
   ResolvedUiTheme,
   ThemeOption,
 } from './components/ARAgingBucketChart';
+import type { ThemeBuilderContext } from '../../../theme/types';
 
 const THEME_STORAGE_KEY = 'taxisbi.ui.theme';
 const REPORT_DATE_STORAGE_KEY = 'taxisbi.ui.reportDate';
@@ -675,7 +676,11 @@ function detectOverlaps(
   };
 }
 
-export default function ARAgingBucketPage() {
+type ARAgingBucketPageProps = {
+  onOpenThemeBuilder?: (context: ThemeBuilderContext) => void;
+};
+
+export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketPageProps) {
   const reportDatePickerRef = useRef<HTMLInputElement | null>(null);
   const themePopoverRef = useRef<HTMLDivElement | null>(null);
   const themeButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -1697,6 +1702,36 @@ export default function ARAgingBucketPage() {
                       ))}
                     </select>
                   </label>
+                </section>
+
+                <section style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, opacity: 0.8 }}>Theme Tokens</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsThemePopoverOpen(false);
+                      onOpenThemeBuilder?.({
+                        domain: 'AR',
+                        pack: 'Receivable_item',
+                        chart: 'aging_by_bucket',
+                        dashboard: 'ar-aging-bucket',
+                      });
+                    }}
+                    style={{
+                      border: '1px solid',
+                      borderColor: uiTheme.buttonBorder,
+                      background: uiTheme.buttonBackground,
+                      color: uiTheme.buttonText,
+                      borderRadius: 8,
+                      padding: '8px 10px',
+                      cursor: 'pointer',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      textAlign: 'left',
+                    }}
+                  >
+                    Open Theme Builder
+                  </button>
                 </section>
               </div>
             </div>
