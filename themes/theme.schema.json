@@ -38,6 +38,7 @@
         "modalOverlayBackground": { "type": "string" },
         "statusDanger": { "type": "string" },
         "statusSuccess": { "type": "string" },
+        "statusOnColor": { "type": "string" },
         "chartBarDefaultColor": { "type": "string" },
         "chartBarHoverColor": { "type": "string" },
         "chartBarDefaultOpacity": { "type": "number", "minimum": 0, "maximum": 1 },

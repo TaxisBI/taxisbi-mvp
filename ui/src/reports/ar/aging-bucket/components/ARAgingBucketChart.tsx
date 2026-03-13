@@ -32,6 +32,7 @@ export type ResolvedUiTheme = {
   modalOverlayBackground: string;
   statusDanger: string;
   statusSuccess: string;
+  statusOnColor: string;
   chartBarDefaultColor: string;
   chartBarHoverColor: string;
   chartBarDefaultOpacity: number;
@@ -131,8 +132,8 @@ export default function ARAgingBucketChart({
   onUiThemeResolved,
 }: ARAgingBucketChartProps) {
   const [uiTheme, setUiTheme] = useState({
-    cardBackground: '#ffffff',
-    cardShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
+    cardBackground: '',
+    cardShadow: '',
     tooltipTheme: 'light' as 'light' | 'dark',
   });
   const [spec, setSpec] = useState<any>(null);
@@ -177,72 +178,103 @@ export default function ARAgingBucketChart({
         });
       onThemeCatalogResolved?.(themeOptions, fallbackThemeKey);
       const selectedTheme = themes[theme] ?? themes[fallbackThemeKey] ?? undefined;
+      const fallbackTheme = themes[fallbackThemeKey] ?? themes.light ?? Object.values(themes)[0];
+      const selectedUi = selectedTheme?.ui ?? {};
+      const fallbackUi = fallbackTheme?.ui ?? {};
 
       const mergedSpec = selectedTheme?.spec ? deepMerge(json.spec, selectedTheme.spec) : json.spec;
 
       const resolvedUiTheme: ResolvedUiTheme = {
-        pageBackground: selectedTheme?.ui?.pageBackground ?? '#f8fafc',
-        pageText: selectedTheme?.ui?.pageText ?? '#0f172a',
-        cardBackground: selectedTheme?.ui?.cardBackground ?? '#ffffff',
-        cardShadow: selectedTheme?.ui?.cardShadow ?? '0 8px 24px rgba(15, 23, 42, 0.08)',
-        buttonBackground: selectedTheme?.ui?.buttonBackground ?? '#ffffff',
-        buttonText: selectedTheme?.ui?.buttonText ?? '#0f172a',
-        buttonBorder: selectedTheme?.ui?.buttonBorder ?? '#cbd5e1',
-        hoverColor: selectedTheme?.ui?.hoverColor ?? '#22c55e',
-        fontFamily: selectedTheme?.ui?.fontFamily ?? 'Helvetica, Arial, sans-serif',
-        modalOverlayBackground:
-          selectedTheme?.ui?.modalOverlayBackground ?? 'rgba(15, 23, 42, 0.45)',
-        statusDanger: selectedTheme?.ui?.statusDanger ?? '#dc2626',
-        statusSuccess: selectedTheme?.ui?.statusSuccess ?? '#16a34a',
-        chartBarDefaultColor: selectedTheme?.ui?.chartBarDefaultColor ?? '#4f46e5',
-        chartBarHoverColor:
-          selectedTheme?.ui?.chartBarHoverColor ?? selectedTheme?.ui?.hoverColor ?? '#22c55e',
+        pageBackground: (selectedUi.pageBackground ?? fallbackUi.pageBackground ?? '') as string,
+        pageText: (selectedUi.pageText ?? fallbackUi.pageText ?? '') as string,
+        cardBackground: (selectedUi.cardBackground ?? fallbackUi.cardBackground ?? '') as string,
+        cardShadow: (selectedUi.cardShadow ?? fallbackUi.cardShadow ?? '') as string,
+        buttonBackground: (selectedUi.buttonBackground ?? fallbackUi.buttonBackground ?? '') as string,
+        buttonText: (selectedUi.buttonText ?? fallbackUi.buttonText ?? '') as string,
+        buttonBorder: (selectedUi.buttonBorder ?? fallbackUi.buttonBorder ?? '') as string,
+        hoverColor: (selectedUi.hoverColor ?? fallbackUi.hoverColor ?? '') as string,
+        fontFamily: (selectedUi.fontFamily ?? fallbackUi.fontFamily ?? 'sans-serif') as string,
+        modalOverlayBackground: (selectedUi.modalOverlayBackground ??
+          fallbackUi.modalOverlayBackground ??
+          '') as string,
+        statusDanger: (selectedUi.statusDanger ?? fallbackUi.statusDanger ?? '') as string,
+        statusSuccess: (selectedUi.statusSuccess ?? fallbackUi.statusSuccess ?? '') as string,
+        statusOnColor: (selectedUi.statusOnColor ?? fallbackUi.statusOnColor ?? '') as string,
+        chartBarDefaultColor: (selectedUi.chartBarDefaultColor ??
+          fallbackUi.chartBarDefaultColor ??
+          selectedUi.hoverColor ??
+          fallbackUi.hoverColor ??
+          '') as string,
+        chartBarHoverColor: (selectedUi.chartBarHoverColor ??
+          fallbackUi.chartBarHoverColor ??
+          selectedUi.hoverColor ??
+          fallbackUi.hoverColor ??
+          '') as string,
         chartBarDefaultOpacity:
-          typeof selectedTheme?.ui?.chartBarDefaultOpacity === 'number'
-            ? selectedTheme.ui.chartBarDefaultOpacity
+          typeof selectedUi.chartBarDefaultOpacity === 'number'
+            ? selectedUi.chartBarDefaultOpacity
+            : typeof fallbackUi.chartBarDefaultOpacity === 'number'
+              ? fallbackUi.chartBarDefaultOpacity
             : 0.72,
         chartBarHoverOpacity:
-          typeof selectedTheme?.ui?.chartBarHoverOpacity === 'number'
-            ? selectedTheme.ui.chartBarHoverOpacity
+          typeof selectedUi.chartBarHoverOpacity === 'number'
+            ? selectedUi.chartBarHoverOpacity
+            : typeof fallbackUi.chartBarHoverOpacity === 'number'
+              ? fallbackUi.chartBarHoverOpacity
             : 1,
-        chartBarDefaultStrokeColor: selectedTheme?.ui?.chartBarDefaultStrokeColor ?? '#4f46e5',
-        chartBarHoverStrokeColor:
-          selectedTheme?.ui?.chartBarHoverStrokeColor ??
-          selectedTheme?.ui?.chartBarHoverColor ??
-          selectedTheme?.ui?.hoverColor ??
-          '#22c55e',
+        chartBarDefaultStrokeColor: (selectedUi.chartBarDefaultStrokeColor ??
+          fallbackUi.chartBarDefaultStrokeColor ??
+          selectedUi.chartBarDefaultColor ??
+          fallbackUi.chartBarDefaultColor ??
+          '') as string,
+        chartBarHoverStrokeColor: (selectedUi.chartBarHoverStrokeColor ??
+          fallbackUi.chartBarHoverStrokeColor ??
+          selectedUi.chartBarHoverColor ??
+          fallbackUi.chartBarHoverColor ??
+          selectedUi.hoverColor ??
+          fallbackUi.hoverColor ??
+          '') as string,
         chartBarDefaultStrokeOpacity:
-          typeof selectedTheme?.ui?.chartBarDefaultStrokeOpacity === 'number'
-            ? selectedTheme.ui.chartBarDefaultStrokeOpacity
+          typeof selectedUi.chartBarDefaultStrokeOpacity === 'number'
+            ? selectedUi.chartBarDefaultStrokeOpacity
+            : typeof fallbackUi.chartBarDefaultStrokeOpacity === 'number'
+              ? fallbackUi.chartBarDefaultStrokeOpacity
             : 1,
         chartBarHoverStrokeOpacity:
-          typeof selectedTheme?.ui?.chartBarHoverStrokeOpacity === 'number'
-            ? selectedTheme.ui.chartBarHoverStrokeOpacity
+          typeof selectedUi.chartBarHoverStrokeOpacity === 'number'
+            ? selectedUi.chartBarHoverStrokeOpacity
+            : typeof fallbackUi.chartBarHoverStrokeOpacity === 'number'
+              ? fallbackUi.chartBarHoverStrokeOpacity
             : 1,
         chartBarDefaultStrokeWidth:
-          typeof selectedTheme?.ui?.chartBarDefaultStrokeWidth === 'number'
-            ? selectedTheme.ui.chartBarDefaultStrokeWidth
+          typeof selectedUi.chartBarDefaultStrokeWidth === 'number'
+            ? selectedUi.chartBarDefaultStrokeWidth
+            : typeof fallbackUi.chartBarDefaultStrokeWidth === 'number'
+              ? fallbackUi.chartBarDefaultStrokeWidth
             : 2,
         chartBarHoverStrokeWidth:
-          typeof selectedTheme?.ui?.chartBarHoverStrokeWidth === 'number'
-            ? selectedTheme.ui.chartBarHoverStrokeWidth
+          typeof selectedUi.chartBarHoverStrokeWidth === 'number'
+            ? selectedUi.chartBarHoverStrokeWidth
+            : typeof fallbackUi.chartBarHoverStrokeWidth === 'number'
+              ? fallbackUi.chartBarHoverStrokeWidth
             : 3,
-        overlapPalette: Array.isArray(selectedTheme?.ui?.overlapPalette)
-          ? (selectedTheme?.ui?.overlapPalette as Array<{ border: string; background: string }>).filter(
+        overlapPalette: Array.isArray(selectedUi.overlapPalette)
+          ? (selectedUi.overlapPalette as Array<{ border: string; background: string }>).filter(
               (entry) =>
                 entry &&
                 typeof entry.border === 'string' &&
                 typeof entry.background === 'string'
             )
-          : [
-              { border: '#dc2626', background: '#fee2e2' },
-              { border: '#d97706', background: '#ffedd5' },
-              { border: '#0891b2', background: '#cffafe' },
-              { border: '#7c3aed', background: '#ede9fe' },
-              { border: '#16a34a', background: '#dcfce7' },
-              { border: '#be185d', background: '#fce7f3' },
-            ],
-        tooltipTheme: selectedTheme?.ui?.tooltipTheme ?? 'light',
+          : Array.isArray(fallbackUi.overlapPalette)
+            ? (fallbackUi.overlapPalette as Array<{ border: string; background: string }>).filter(
+                (entry) =>
+                  entry &&
+                  typeof entry.border === 'string' &&
+                  typeof entry.background === 'string'
+              )
+            : [],
+        tooltipTheme:
+          ((selectedUi.tooltipTheme ?? fallbackUi.tooltipTheme ?? 'light') as 'light' | 'dark'),
       };
 
       setUiTheme({
@@ -377,6 +409,7 @@ export default function ARAgingBucketChart({
                   color: {
                     condition: {
                       param: 'barHoverLocal',
+                      empty: false,
                       value: resolvedUiTheme.chartBarHoverColor,
                     },
                     value: chartBarDefaultColor,
@@ -384,6 +417,7 @@ export default function ARAgingBucketChart({
                   opacity: {
                     condition: {
                       param: 'barHoverLocal',
+                      empty: false,
                       value: resolvedUiTheme.chartBarHoverOpacity,
                     },
                     value: resolvedUiTheme.chartBarDefaultOpacity,
@@ -391,6 +425,7 @@ export default function ARAgingBucketChart({
                   stroke: {
                     condition: {
                       param: 'barHoverLocal',
+                      empty: false,
                       value: resolvedUiTheme.chartBarHoverStrokeColor,
                     },
                     value: chartBarDefaultStrokeColor,
@@ -398,6 +433,7 @@ export default function ARAgingBucketChart({
                   strokeOpacity: {
                     condition: {
                       param: 'barHoverLocal',
+                      empty: false,
                       value: resolvedUiTheme.chartBarHoverStrokeOpacity,
                     },
                     value: chartBarDefaultStrokeOpacity,
@@ -405,6 +441,7 @@ export default function ARAgingBucketChart({
                   strokeWidth: {
                     condition: {
                       param: 'barHoverLocal',
+                      empty: false,
                       value: resolvedUiTheme.chartBarHoverStrokeWidth,
                     },
                     value: chartBarDefaultStrokeWidth,

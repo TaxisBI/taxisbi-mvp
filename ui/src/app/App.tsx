@@ -1,5 +1,11 @@
-import ARAgingBucketPage from '../reports/ar/aging-bucket/ARAgingBucketPage';
+import { Suspense, lazy } from 'react';
+
+const ARAgingBucketPage = lazy(() => import('../reports/ar/aging-bucket/ARAgingBucketPage'));
 
 export default function App() {
-  return <ARAgingBucketPage />;
+  return (
+    <Suspense fallback={<div>Loading report...</div>}>
+      <ARAgingBucketPage />
+    </Suspense>
+  );
 }

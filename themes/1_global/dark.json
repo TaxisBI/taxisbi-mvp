@@ -17,6 +17,7 @@
     "modalOverlayBackground": "rgba(2, 6, 23, 0.68)",
     "statusDanger": "#f87171",
     "statusSuccess": "#4ade80",
+    "statusOnColor": "#0b1220",
     "chartBarDefaultColor": "#60a5fa",
     "chartBarHoverColor": "#22c55e",
     "chartBarDefaultOpacity": 0.72,
