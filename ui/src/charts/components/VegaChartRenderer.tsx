@@ -1,5 +1,53 @@
+import { Component, ReactNode } from 'react';
 import { VegaEmbed } from 'react-vega';
 import type { CanvasSizeMode } from '../../reports/ar/aging-bucket/components/ARAgingBucketChart';
+
+type ChartErrorBoundaryProps = {
+  children: ReactNode;
+};
+
+type ChartErrorBoundaryState = {
+  errorMessage: string | null;
+};
+
+class ChartErrorBoundary extends Component<ChartErrorBoundaryProps, ChartErrorBoundaryState> {
+  state: ChartErrorBoundaryState = {
+    errorMessage: null,
+  };
+
+  static getDerivedStateFromError(error: Error) {
+    return {
+      errorMessage: error?.message ?? 'Unknown Vega render error',
+    };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error('[VegaChartRenderer] chart render failed:', error);
+  }
+
+  render() {
+    if (this.state.errorMessage) {
+      return (
+        <div
+          style={{
+            border: '1px solid #fecaca',
+            background: '#fff1f2',
+            color: '#881337',
+            borderRadius: 8,
+            padding: 12,
+            fontSize: 13,
+            lineHeight: 1.45,
+            whiteSpace: 'pre-wrap',
+          }}
+        >
+          {`Chart render error: ${this.state.errorMessage}`}
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 type VegaChartRendererProps = {
   spec: any;
@@ -64,7 +112,9 @@ export default function VegaChartRenderer({
         transition: 'background-color 200ms ease, box-shadow 200ms ease',
       }}
     >
-      <VegaEmbed spec={spec} options={{ actions: true, tooltip: { theme: tooltipTheme } }} />
+      <ChartErrorBoundary>
+        <VegaEmbed spec={spec} options={{ actions: true, tooltip: { theme: tooltipTheme } }} />
+      </ChartErrorBoundary>
     </div>
   );
 }
