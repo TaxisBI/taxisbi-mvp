@@ -166,6 +166,31 @@ export function useThemeBuilder(context: ThemeBuilderContext) {
     setRgbDraft({ r: String(rgb.r), g: String(rgb.g), b: String(rgb.b) });
   };
 
+  const applyHexToToken = (tokenPath: string, rawHex: string) => {
+    const normalized = normalizeHexColor(rawHex);
+    if (!normalized) {
+      setColorStudioError('Enter a valid HEX color such as #4f46e5.');
+      return;
+    }
+
+    const token = colorStudioTokens.find((entry) => entry.pathText === tokenPath);
+    if (!token || !editableThemeUi) {
+      setColorStudioError('No editable color token selected.');
+      return;
+    }
+
+    setColorStudioError(null);
+    setColorDraftByToken((current) => ({ ...current, [tokenPath]: normalized }));
+    setEditableThemeUi((current) => (current ? setValueAtPath(current, token.path, normalized) : current));
+    setColorStudioTokens((current) =>
+      current.map((entry) => (entry.pathText === tokenPath ? { ...entry, value: normalized } : entry))
+    );
+    setActiveColorToken(tokenPath);
+    setHexDraft(normalized);
+    const rgb = hexToRgb(normalized);
+    setRgbDraft({ r: String(rgb.r), g: String(rgb.g), b: String(rgb.b) });
+  };
+
   const applyRgbToActiveToken = () => {
     const r = Number.parseInt(rgbDraft.r, 10);
     const g = Number.parseInt(rgbDraft.g, 10);
@@ -259,6 +284,7 @@ export function useThemeBuilder(context: ThemeBuilderContext) {
     setThemeSaveDraft,
     setColorStudioError,
     applyHexToActiveToken,
+    applyHexToToken,
     applyRgbToActiveToken,
     saveGeneratedTheme,
     toThemeKeyCandidate,

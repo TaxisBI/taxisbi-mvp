@@ -1,7 +1,8 @@
 import express, { Request, Response } from "express";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { getAgingChart, loadBuiltInThemes, ThemeContext } from "./routes/agingChart";
+import { loadBuiltInThemes, ThemeContext } from "./routes/agingChart";
+import chartsRouter from "./routes/charts";
 
 type BucketOperator = '=' | '<>' | '>=' | '<=' | '>' | '<';
 type BucketCombinator = 'AND' | 'OR';
@@ -309,22 +310,7 @@ app.get("/", (_req: Request, res: Response) => {
 	res.send("Express + TypeScript API is running.");
 });
 
-app.get("/api/charts/aging-by-bucket", async (req: Request, res: Response) => {
-	try {
-		const reportDate = typeof req.query.report_date === 'string' ? req.query.report_date : undefined;
-		const bucketDefs = parseAgingBuckets(req.query.buckets);
-		const chart = await getAgingChart(reportDate, bucketDefs);
-		res.status(200).json(chart);
-	} catch (error) {
-		if (error instanceof Error && /Bucket|buckets/i.test(error.message)) {
-			res.status(400).json({ error: error.message });
-			return;
-		}
-
-		console.error("Failed to load aging chart", error);
-		res.status(500).json({ error: "Failed to load aging chart" });
-	}
-});
+app.use("/api/charts", chartsRouter);
 
 app.get("/api/themes", async (req: Request, res: Response) => {
 	try {

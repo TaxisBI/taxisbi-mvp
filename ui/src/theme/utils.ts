@@ -63,19 +63,28 @@ function formatThemePath(path: ThemePathSegment[]) {
     .join('');
 }
 
-function formatColorTokenLabel(path: ThemePathSegment[]) {
-  if (path.length === 0) {
-    return 'Color Token';
+function formatPathSegment(segment: ThemePathSegment) {
+  if (typeof segment === 'number') {
+    return `Item ${segment + 1}`;
   }
-  const last = path[path.length - 1];
-  if (typeof last === 'number') {
-    return `Palette Index ${last + 1}`;
-  }
-  return last
+
+  return segment
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/[_-]+/g, ' ')
     .replace(/\s+/g, ' ')
     .replace(/^./, (char) => char.toUpperCase());
+}
+
+function formatColorTokenLabel(path: ThemePathSegment[]) {
+  if (path.length === 0) {
+    return 'Color Token';
+  }
+
+  if (path.length === 1) {
+    return formatPathSegment(path[0]);
+  }
+
+  return path.slice(1).map((segment) => formatPathSegment(segment)).join(' / ');
 }
 
 export function collectColorStudioTokens(value: unknown, path: ThemePathSegment[] = []): ColorStudioToken[] {

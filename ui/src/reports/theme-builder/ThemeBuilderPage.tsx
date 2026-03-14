@@ -1,32 +1,55 @@
-import ThemeBuilderModal from '../../theme/components/ThemeBuilderModal';
+import ThemeBuilderWorkspace from '../../theme/components/ThemeBuilderWorkspace';
 import type { ThemeBuilderContext } from '../../theme/types';
 import { useThemeBuilder } from '../../theme/useThemeBuilder';
 
 type ThemeBuilderPageProps = {
   context: ThemeBuilderContext;
-  onBack: () => void;
+  onBackToLanding: () => void;
+  onBackToReport: () => void;
+  canBackToReport: boolean;
 };
 
-export default function ThemeBuilderPage({ context, onBack }: ThemeBuilderPageProps) {
+export default function ThemeBuilderPage({
+  context,
+  onBackToLanding,
+  onBackToReport,
+  canBackToReport,
+}: ThemeBuilderPageProps) {
   const builder = useThemeBuilder(context);
 
   return (
-    <>
+    <div
+      style={{
+        minHeight: '100vh',
+        height: '100vh',
+        background: builder.uiTheme.pageBackground,
+        color: builder.uiTheme.pageText,
+        display: 'grid',
+        gridTemplateRows: 'auto 1fr',
+        gap: 10,
+        padding: '10px 12px 12px',
+        boxSizing: 'border-box',
+        overflow: 'hidden',
+      }}
+    >
       <div
         style={{
-          position: 'fixed',
-          top: 16,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 80,
-          background: '#ffffff',
-          border: '1px solid #d0d7e2',
+          width: '100%',
+          maxWidth: 1360,
+          margin: '0 auto',
+          minWidth: 0,
+          boxSizing: 'border-box',
+          background: builder.uiTheme.cardBackground,
+          border: '1px solid',
+          borderColor: builder.uiTheme.buttonBorder,
           borderRadius: 12,
-          padding: '10px 12px',
+          padding: '12px 14px',
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'space-between',
           gap: 8,
-          boxShadow: '0 8px 24px rgba(15, 23, 42, 0.12)',
+          flexWrap: 'wrap',
+          boxShadow: builder.uiTheme.cardShadow,
         }}
       >
         {builder.isLoadingThemes ? <span style={{ fontSize: 13 }}>Loading themes...</span> : null}
@@ -47,7 +70,9 @@ export default function ThemeBuilderPage({ context, onBack }: ThemeBuilderPagePr
                 background: '#ffffff',
                 padding: '6px 10px',
                 fontSize: 13,
-                minWidth: 220,
+                minWidth: 0,
+                width: 'min(280px, 100%)',
+                maxWidth: '100%',
               }}
             >
               {builder.themeOptions.map((option) => (
@@ -60,23 +85,20 @@ export default function ThemeBuilderPage({ context, onBack }: ThemeBuilderPagePr
         ) : null}
       </div>
 
-      <ThemeBuilderModal
+      <ThemeBuilderWorkspace
         uiTheme={builder.uiTheme}
         colorStudioTokens={builder.colorStudioTokens}
         activeColorToken={builder.activeColorToken}
         colorDraftByToken={builder.colorDraftByToken}
-        hexDraft={builder.hexDraft}
-        rgbDraft={builder.rgbDraft}
         themeSaveDraft={builder.themeSaveDraft}
         colorStudioError={builder.colorStudioError}
         isSavingTheme={builder.isSavingTheme}
-        onClose={onBack}
+        onBackToLanding={onBackToLanding}
+        onBackToReport={onBackToReport}
+        canBackToReport={canBackToReport}
         onSelectToken={builder.setActiveColorToken}
         onClearError={() => builder.setColorStudioError(null)}
-        onSetHexDraft={builder.setHexDraft}
-        onSetRgbDraft={builder.setRgbDraft}
-        onApplyHex={builder.applyHexToActiveToken}
-        onApplyRgb={builder.applyRgbToActiveToken}
+        onApplyHexForToken={builder.applyHexToToken}
         onSaveTheme={builder.saveGeneratedTheme}
         onUpdateThemeSaveDraft={(patch) =>
           builder.setThemeSaveDraft((current) => ({
@@ -86,6 +108,6 @@ export default function ThemeBuilderPage({ context, onBack }: ThemeBuilderPagePr
         }
         toThemeKeyCandidate={builder.toThemeKeyCandidate}
       />
-    </>
+    </div>
   );
 }

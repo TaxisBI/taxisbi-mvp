@@ -1,16 +1,27 @@
 import type { ThemeBuilderContext } from './types';
 
-export type ThemeBuilderReportId = 'ar-aging';
-
-const THEME_BUILDER_CONTEXT_BY_REPORT: Record<ThemeBuilderReportId, ThemeBuilderContext> = {
-  'ar-aging': {
-    domain: 'AR',
-    pack: 'Receivable_item',
-    chart: 'aging_by_bucket',
-    dashboard: 'ar-aging-bucket',
-  },
+type ThemeBuilderReportConfig = {
+  themeContext: ThemeBuilderContext;
 };
 
+// Add new reports here. One new key entry is enough to make context routing available.
+export const THEME_BUILDER_REPORTS = {
+  'ar-aging': {
+    themeContext: {
+      domain: 'AR',
+      pack: 'Receivable_item',
+      chart: 'aging_by_bucket',
+      dashboard: 'ar-aging-bucket',
+    },
+  },
+} satisfies Record<string, ThemeBuilderReportConfig>;
+
+export type ThemeBuilderReportId = keyof typeof THEME_BUILDER_REPORTS;
+
+export function isThemeBuilderReportId(value: string): value is ThemeBuilderReportId {
+  return value in THEME_BUILDER_REPORTS;
+}
+
 export function getThemeBuilderContextForReport(reportId: ThemeBuilderReportId): ThemeBuilderContext {
-  return THEME_BUILDER_CONTEXT_BY_REPORT[reportId];
+  return THEME_BUILDER_REPORTS[reportId].themeContext;
 }

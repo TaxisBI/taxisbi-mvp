@@ -11,8 +11,22 @@ base AS
 )
 
 SELECT
-    {{AGING_BUCKET_EXPR}} AS AgingBucket,
-    {{AGING_BUCKET_ORDER_EXPR}} AS BucketOrder,
+    multiIf(
+        (days_past_due <= 0), 'Current',
+        (days_past_due >= 1) AND (days_past_due <= 30), '1-30',
+        (days_past_due >= 31) AND (days_past_due <= 60), '31-60',
+        (days_past_due >= 61) AND (days_past_due <= 90), '61-90',
+        (days_past_due > 90), '91+',
+        'Unbucketed'
+    ) AS AgingBucket,
+    multiIf(
+        (days_past_due <= 0), 1,
+        (days_past_due >= 1) AND (days_past_due <= 30), 2,
+        (days_past_due >= 31) AND (days_past_due <= 60), 3,
+        (days_past_due >= 61) AND (days_past_due <= 90), 4,
+        (days_past_due > 90), 5,
+        9999
+    ) AS BucketOrder,
     sum(DocumentAmount) AS Balance
 FROM base
 GROUP BY AgingBucket, BucketOrder

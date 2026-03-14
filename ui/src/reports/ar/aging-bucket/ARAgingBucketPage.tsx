@@ -18,7 +18,7 @@ import ARAgingBucketChart, {
   ResolvedUiTheme,
   ThemeOption,
 } from './components/ARAgingBucketChart';
-import type { ThemeBuilderContext } from '../../../theme/types';
+import type { ThemeBuilderReportId } from '../../../theme/navigation';
 
 const THEME_STORAGE_KEY = 'taxisbi.ui.theme';
 const REPORT_DATE_STORAGE_KEY = 'taxisbi.ui.reportDate';
@@ -677,7 +677,7 @@ function detectOverlaps(
 }
 
 type ARAgingBucketPageProps = {
-  onOpenThemeBuilder?: (context: ThemeBuilderContext) => void;
+  onOpenThemeBuilder?: (reportId: ThemeBuilderReportId) => void;
 };
 
 export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketPageProps) {
@@ -1710,12 +1710,7 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
                     type="button"
                     onClick={() => {
                       setIsThemePopoverOpen(false);
-                      onOpenThemeBuilder?.({
-                        domain: 'AR',
-                        pack: 'Receivable_item',
-                        chart: 'aging_by_bucket',
-                        dashboard: 'ar-aging-bucket',
-                      });
+                      onOpenThemeBuilder?.('ar-aging');
                     }}
                     style={{
                       border: '1px solid',

@@ -164,7 +164,7 @@ export default function ARAgingBucketChart({
           }))
         ),
       });
-      const res = await fetch(`/api/charts/aging-by-bucket?${params.toString()}`);
+      const res = await fetch(`/api/charts/ar/receivable_item/aging_by_bucket?${params.toString()}`);
       const json = await res.json();
 
       if (!res.ok) {
