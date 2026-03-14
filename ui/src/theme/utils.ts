@@ -1,4 +1,10 @@
-import { ColorStudioToken, ThemePathSegment, ThemeSaveDraft, ThemeBuilderUiTheme } from './types';
+import {
+  ColorStudioToken,
+  StyleStudioToken,
+  ThemePathSegment,
+  ThemeSaveDraft,
+  ThemeBuilderUiTheme,
+} from './types';
 
 export function normalizeHexColor(input: string): string | null {
   const trimmed = input.trim();
@@ -120,7 +126,7 @@ export function collectColorStudioTokens(value: unknown, path: ThemePathSegment[
 export function setValueAtPath(
   root: Record<string, unknown>,
   path: ThemePathSegment[],
-  nextValue: string
+  nextValue: unknown
 ): Record<string, unknown> {
   const draft: Record<string, unknown> = { ...root };
   if (path.length === 0) {
@@ -159,6 +165,79 @@ export function setValueAtPath(
   }
 
   return draft;
+}
+
+function classifyStyleToken(pathText: string): 'widths' | 'typography' | null {
+  const normalized = pathText.toLowerCase();
+
+  if (/stroke|line|border|width|opacity|radius|dash|padding|corner/.test(normalized)) {
+    return 'widths';
+  }
+
+  if (/font|text|label|title|size|weight|family|style/.test(normalized)) {
+    return 'typography';
+  }
+
+  return null;
+}
+
+export function collectStyleStudioTokens(
+  value: unknown,
+  path: ThemePathSegment[] = []
+): StyleStudioToken[] {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const pathText = formatThemePath(path);
+    const group = classifyStyleToken(pathText);
+    if (!group) {
+      return [];
+    }
+
+    return [
+      {
+        path,
+        pathText,
+        label: formatColorTokenLabel(path),
+        value,
+        valueType: 'number',
+        group,
+      },
+    ];
+  }
+
+  if (typeof value === 'string') {
+    if (normalizeHexColor(value)) {
+      return [];
+    }
+
+    const pathText = formatThemePath(path);
+    const group = classifyStyleToken(pathText);
+    if (!group) {
+      return [];
+    }
+
+    return [
+      {
+        path,
+        pathText,
+        label: formatColorTokenLabel(path),
+        value,
+        valueType: 'text',
+        group,
+      },
+    ];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((entry, index) => collectStyleStudioTokens(entry, [...path, index]));
+  }
+
+  if (isRecord(value)) {
+    return Object.entries(value).flatMap(([key, nested]) =>
+      collectStyleStudioTokens(nested, [...path, key])
+    );
+  }
+
+  return [];
 }
 
 export function createDefaultThemeSaveDraft(context: {

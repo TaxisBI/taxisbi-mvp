@@ -1,13 +1,188 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ColorStudioToken, ThemeSaveDraft, ThemeBuilderUiTheme } from '../types';
+import { ColorStudioToken, StyleStudioToken, ThemeSaveDraft, ThemeBuilderUiTheme } from '../types';
 import { hexToRgb, normalizeHexColor, rgbToHex } from '../utils';
 import ThemePreviewChart from './ThemePreviewChart';
 
 const FOLDER_STATE_STORAGE_KEY = 'taxisbi.themeBuilder.expandedFolders';
 
+const FONT_FAMILY_OPTIONS = [
+  { value: 'Helvetica, Arial, sans-serif', label: 'Helvetica (Default)' },
+  { value: 'Arial, sans-serif', label: 'Arial' },
+  { value: 'Segoe UI, Tahoma, sans-serif', label: 'Segoe UI' },
+  { value: 'Georgia, serif', label: 'Georgia' },
+  { value: 'Times New Roman, Times, serif', label: 'Times New Roman' },
+  { value: 'Courier New, Courier, monospace', label: 'Courier New' },
+  { value: 'Trebuchet MS, sans-serif', label: 'Trebuchet MS' },
+];
+
+const TYPOGRAPHY_OVERRIDE_SECTIONS = [
+  {
+    key: 'title',
+    label: 'Chart Title',
+    description: 'Overrides the main chart title above the preview.',
+  },
+  {
+    key: 'legend',
+    label: 'Legend',
+    description: 'Overrides legend labels and the legend title.',
+  },
+  {
+    key: 'axis',
+    label: 'Axis',
+    description: 'Overrides axis labels and axis titles.',
+  },
+  {
+    key: 'barLabel',
+    label: 'Bar Labels',
+    description: 'Overrides the numeric labels drawn above the bars.',
+  },
+  {
+    key: 'tooltip',
+    label: 'Tooltip',
+    description: 'Controls the preview tooltip card shown under the chart.',
+  },
+] as const;
+
+const TYPOGRAPHY_BASE_SUFFIXES = [
+  'FontFamily',
+  'FontWeight',
+  'FontStyle',
+  'FontSize',
+  'FontColor',
+] as const;
+
+const TYPOGRAPHY_SHARED_SUFFIXES = [
+  ...TYPOGRAPHY_BASE_SUFFIXES,
+  'TextRenderMode',
+  'TextStrokeColor',
+  'TextStrokeWidth',
+] as const;
+
+const TOOLTIP_SURFACE_SUFFIXES = [
+  'BackgroundColor',
+  'BorderColor',
+  'BorderWidth',
+  'Padding',
+] as const;
+
+type TypographySettings = {
+  fontFamily: string;
+  fontStyle: 'normal' | 'italic';
+  fontWeight: 'normal' | 'bold';
+  fontSize: number;
+  fontColor: string;
+  textRenderMode: 'fill' | 'hollow';
+  textStrokeColor: string;
+  textStrokeWidth: number;
+};
+
+function getTypographySettingKey(prefix: string | null, suffix: string) {
+  return prefix ? `${prefix}${suffix}` : `${suffix.charAt(0).toLowerCase()}${suffix.slice(1)}`;
+}
+
+function getUiStringValue(
+  editableThemeUi: Record<string, unknown> | null,
+  key: string,
+  fallback: string
+) {
+  const value = editableThemeUi?.[key];
+  return typeof value === 'string' && value.trim() ? value : fallback;
+}
+
+function getUiNumberValue(
+  editableThemeUi: Record<string, unknown> | null,
+  key: string,
+  fallback: number
+) {
+  const value = editableThemeUi?.[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function getUiColorValue(
+  editableThemeUi: Record<string, unknown> | null,
+  key: string,
+  fallback: string
+) {
+  const value = editableThemeUi?.[key];
+  return typeof value === 'string' && normalizeHexColor(value) ? normalizeHexColor(value)! : fallback;
+}
+
+function resolveTypographySettings(
+  editableThemeUi: Record<string, unknown> | null,
+  prefix: string | null,
+  fallback?: TypographySettings
+): TypographySettings {
+  return {
+    fontFamily: getUiStringValue(
+      editableThemeUi,
+      getTypographySettingKey(prefix, 'FontFamily'),
+      fallback?.fontFamily ?? 'Helvetica, Arial, sans-serif'
+    ),
+    fontStyle:
+      getUiStringValue(
+        editableThemeUi,
+        getTypographySettingKey(prefix, 'FontStyle'),
+        fallback?.fontStyle ?? 'normal'
+      ) === 'italic'
+        ? 'italic'
+        : 'normal',
+    fontWeight:
+      getUiStringValue(
+        editableThemeUi,
+        getTypographySettingKey(prefix, 'FontWeight'),
+        fallback?.fontWeight ?? 'normal'
+      ) === 'bold'
+        ? 'bold'
+        : 'normal',
+    fontSize: getUiNumberValue(
+      editableThemeUi,
+      getTypographySettingKey(prefix, 'FontSize'),
+      fallback?.fontSize ?? 12
+    ),
+    fontColor: getUiColorValue(
+      editableThemeUi,
+      getTypographySettingKey(prefix, 'FontColor'),
+      fallback?.fontColor ?? '#111827'
+    ),
+    textRenderMode:
+      getUiStringValue(
+        editableThemeUi,
+        getTypographySettingKey(prefix, 'TextRenderMode'),
+        fallback?.textRenderMode ?? 'fill'
+      ) === 'hollow'
+        ? 'hollow'
+        : 'fill',
+    textStrokeColor: getUiColorValue(
+      editableThemeUi,
+      getTypographySettingKey(prefix, 'TextStrokeColor'),
+      fallback?.textStrokeColor ?? '#111827'
+    ),
+    textStrokeWidth: getUiNumberValue(
+      editableThemeUi,
+      getTypographySettingKey(prefix, 'TextStrokeWidth'),
+      fallback?.textStrokeWidth ?? 1.2
+    ),
+  };
+}
+
+const MANAGED_TYPOGRAPHY_STYLE_KEYS = new Set<string>([
+  ...TYPOGRAPHY_SHARED_SUFFIXES.map((suffix) => getTypographySettingKey(null, suffix)),
+  ...TYPOGRAPHY_OVERRIDE_SECTIONS.flatMap((section) =>
+    TYPOGRAPHY_BASE_SUFFIXES.map((suffix) => getTypographySettingKey(section.key, suffix))
+  ),
+]);
+
+const MANAGED_WIDTH_STYLE_KEYS = new Set<string>([
+  ...TOOLTIP_SURFACE_SUFFIXES.filter((suffix) => suffix === 'BorderWidth' || suffix === 'Padding').map(
+    (suffix) => getTypographySettingKey('tooltip', suffix)
+  ),
+]);
+
 type ThemeBuilderWorkspaceProps = {
   uiTheme: ThemeBuilderUiTheme;
+  editableThemeUi: Record<string, unknown> | null;
   colorStudioTokens: ColorStudioToken[];
+  styleStudioTokens: StyleStudioToken[];
   activeColorToken: string;
   colorDraftByToken: Record<string, string>;
   themeSaveDraft: ThemeSaveDraft;
@@ -19,6 +194,9 @@ type ThemeBuilderWorkspaceProps = {
   onSelectToken: (tokenPath: string) => void;
   onClearError: () => void;
   onApplyHexForToken: (tokenPath: string, value: string) => void;
+  onApplyStyleValueForToken: (tokenPath: string, value: string) => void;
+  onApplyUiSetting: (key: string, value: unknown) => void;
+  onClearUiSettings: (keys: string[]) => void;
   onSaveTheme: () => void;
   onUpdateThemeSaveDraft: (patch: Partial<ThemeSaveDraft>) => void;
   toThemeKeyCandidate: (input: string) => string;
@@ -26,7 +204,9 @@ type ThemeBuilderWorkspaceProps = {
 
 export default function ThemeBuilderWorkspace({
   uiTheme,
+  editableThemeUi,
   colorStudioTokens,
+  styleStudioTokens,
   activeColorToken,
   colorDraftByToken,
   themeSaveDraft,
@@ -38,6 +218,9 @@ export default function ThemeBuilderWorkspace({
   onSelectToken,
   onClearError,
   onApplyHexForToken,
+  onApplyStyleValueForToken,
+  onApplyUiSetting,
+  onClearUiSettings,
   onSaveTheme,
   onUpdateThemeSaveDraft,
   toThemeKeyCandidate,
@@ -85,6 +268,18 @@ export default function ThemeBuilderWorkspace({
   });
   const [themeType, setThemeType] = useState<'all' | 'monocolor' | 'adjacent' | 'diverging'>('all');
   const [themeTone, setThemeTone] = useState<'light' | 'dark'>('light');
+  const [isThemeElementsExpanded, setIsThemeElementsExpanded] = useState(true);
+  const [isWidthsSectionExpanded, setIsWidthsSectionExpanded] = useState(true);
+  const [isTypographySectionExpanded, setIsTypographySectionExpanded] = useState(true);
+  const [isColorsSectionExpanded, setIsColorsSectionExpanded] = useState(true);
+  const [expandedTypographyOverrides, setExpandedTypographyOverrides] = useState<Record<string, boolean>>({
+    title: false,
+    legend: false,
+    axis: false,
+    barLabel: false,
+    tooltip: false,
+  });
+  const [styleDraftByToken, setStyleDraftByToken] = useState<Record<string, string>>({});
 
   const editorTokenEntry = useMemo(
     () => colorStudioTokens.find((token) => token.pathText === editorTokenPath),
@@ -155,6 +350,53 @@ export default function ThemeBuilderWorkspace({
     }));
   }, [filteredTokens]);
 
+  const widthStyleTokens = useMemo(
+    () =>
+      styleStudioTokens.filter(
+        (token) => token.group === 'widths' && !MANAGED_WIDTH_STYLE_KEYS.has(token.pathText)
+      ),
+    [styleStudioTokens]
+  );
+
+  const typographyStyleTokens = useMemo(
+    () => styleStudioTokens.filter((token) => token.group === 'typography'),
+    [styleStudioTokens]
+  );
+
+  const sharedTypography = resolveTypographySettings(editableThemeUi, null);
+  const titleTypography = resolveTypographySettings(editableThemeUi, 'title', sharedTypography);
+  const legendTypography = resolveTypographySettings(editableThemeUi, 'legend', sharedTypography);
+  const axisTypography = resolveTypographySettings(editableThemeUi, 'axis', sharedTypography);
+  const barLabelTypography = resolveTypographySettings(editableThemeUi, 'barLabel', sharedTypography);
+  const tooltipTypography = resolveTypographySettings(editableThemeUi, 'tooltip', sharedTypography);
+  const tooltipSurfaceSettings = {
+    backgroundColor: getUiColorValue(
+      editableThemeUi,
+      getTypographySettingKey('tooltip', 'BackgroundColor'),
+      uiTheme.cardBackground
+    ),
+    borderColor: getUiColorValue(
+      editableThemeUi,
+      getTypographySettingKey('tooltip', 'BorderColor'),
+      uiTheme.buttonBorder
+    ),
+    borderWidth: getUiNumberValue(
+      editableThemeUi,
+      getTypographySettingKey('tooltip', 'BorderWidth'),
+      1
+    ),
+    padding: getUiNumberValue(
+      editableThemeUi,
+      getTypographySettingKey('tooltip', 'Padding'),
+      12
+    ),
+  };
+
+  const additionalTypographyStyleTokens = useMemo(
+    () => typographyStyleTokens.filter((token) => !MANAGED_TYPOGRAPHY_STYLE_KEYS.has(token.pathText)),
+    [typographyStyleTokens]
+  );
+
   useEffect(() => {
     setExpandedFolders((current) => {
       const next: Record<string, boolean> = {};
@@ -164,6 +406,25 @@ export default function ThemeBuilderWorkspace({
       return next;
     });
   }, [tokenFolders]);
+
+  useEffect(() => {
+    setStyleDraftByToken((current) => {
+      const next = { ...current };
+      for (const token of styleStudioTokens) {
+        if (!(token.pathText in next)) {
+          next[token.pathText] = String(token.value);
+        }
+      }
+
+      for (const key of Object.keys(next)) {
+        if (!styleStudioTokens.some((token) => token.pathText === key)) {
+          delete next[key];
+        }
+      }
+
+      return next;
+    });
+  }, [styleStudioTokens]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -345,6 +606,285 @@ export default function ThemeBuilderWorkspace({
     onSelectToken(editorTokenPath);
     onApplyHexForToken(editorTokenPath, normalized);
     closeColorPicker();
+  };
+
+  const hasTypographyOverride = (prefix: string) => {
+    if (!editableThemeUi) {
+      return false;
+    }
+
+    const suffixes =
+      prefix === 'tooltip'
+        ? [...TYPOGRAPHY_BASE_SUFFIXES, ...TOOLTIP_SURFACE_SUFFIXES]
+        : TYPOGRAPHY_BASE_SUFFIXES;
+
+    return suffixes.some((suffix) =>
+      Object.prototype.hasOwnProperty.call(editableThemeUi, getTypographySettingKey(prefix, suffix))
+    );
+  };
+
+  const renderTooltipSurfaceControls = () => {
+    const fieldStyle = {
+      display: 'grid',
+      gap: 6,
+      fontSize: 12,
+      fontWeight: 600,
+    } as const;
+    const inputStyle = {
+      border: '1px solid',
+      borderColor: uiTheme.buttonBorder,
+      borderRadius: 6,
+      padding: '6px 8px',
+      background: uiTheme.buttonBackground,
+      color: uiTheme.buttonText,
+      fontSize: 12,
+      width: '100%',
+      boxSizing: 'border-box',
+    } as const;
+    const colorInputStyle = {
+      border: '1px solid',
+      borderColor: uiTheme.buttonBorder,
+      borderRadius: 6,
+      padding: '2px',
+      background: uiTheme.buttonBackground,
+      height: 34,
+      width: 48,
+    } as const;
+    const keyFor = (suffix: (typeof TOOLTIP_SURFACE_SUFFIXES)[number]) =>
+      getTypographySettingKey('tooltip', suffix);
+
+    return (
+      <div style={{ display: 'grid', gap: 10 }}>
+        <span style={{ fontSize: 11, opacity: 0.72 }}>
+          These settings style the actual Vega hover tooltip container.
+        </span>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gap: 12,
+            alignItems: 'end',
+          }}
+        >
+          <label style={fieldStyle}>
+            <span>Background</span>
+            <input
+              type="color"
+              value={tooltipSurfaceSettings.backgroundColor}
+              onChange={(event) => onApplyUiSetting(keyFor('BackgroundColor'), event.target.value)}
+              style={colorInputStyle}
+            />
+          </label>
+          <label style={fieldStyle}>
+            <span>Border Color</span>
+            <input
+              type="color"
+              value={tooltipSurfaceSettings.borderColor}
+              onChange={(event) => onApplyUiSetting(keyFor('BorderColor'), event.target.value)}
+              style={colorInputStyle}
+            />
+          </label>
+          <label style={fieldStyle}>
+            <span>Border Width</span>
+            <input
+              type="number"
+              min={0}
+              max={8}
+              step={1}
+              value={tooltipSurfaceSettings.borderWidth}
+              onChange={(event) =>
+                onApplyUiSetting(keyFor('BorderWidth'), Number.parseFloat(event.target.value) || 0)
+              }
+              style={inputStyle}
+            />
+          </label>
+          <label style={fieldStyle}>
+            <span>Padding</span>
+            <input
+              type="number"
+              min={0}
+              max={40}
+              step={1}
+              value={tooltipSurfaceSettings.padding}
+              onChange={(event) =>
+                onApplyUiSetting(keyFor('Padding'), Number.parseFloat(event.target.value) || 0)
+              }
+              style={inputStyle}
+            />
+          </label>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTypographyControls = ({
+    prefix,
+    settings,
+    includeRenderControls,
+  }: {
+    prefix: string | null;
+    settings: TypographySettings;
+    includeRenderControls: boolean;
+  }) => {
+    const fieldStyle = {
+      display: 'grid',
+      gap: 6,
+      fontSize: 12,
+      fontWeight: 600,
+    } as const;
+    const inputStyle = {
+      border: '1px solid',
+      borderColor: uiTheme.buttonBorder,
+      borderRadius: 6,
+      padding: '6px 8px',
+      background: uiTheme.buttonBackground,
+      color: uiTheme.buttonText,
+      fontSize: 12,
+      width: '100%',
+      boxSizing: 'border-box',
+    } as const;
+    const colorInputStyle = {
+      border: '1px solid',
+      borderColor: uiTheme.buttonBorder,
+      borderRadius: 6,
+      padding: '2px',
+      background: uiTheme.buttonBackground,
+      height: 34,
+      width: 48,
+    } as const;
+    const keyFor = (suffix: string) => getTypographySettingKey(prefix, suffix);
+
+    return (
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gap: 12,
+          alignItems: 'end',
+        }}
+      >
+        <label style={fieldStyle}>
+          <span>Font Family</span>
+          <select
+            value={settings.fontFamily}
+            onChange={(event) => onApplyUiSetting(keyFor('FontFamily'), event.target.value)}
+            style={inputStyle}
+          >
+            {FONT_FAMILY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label style={fieldStyle}>
+          <span>Font Size</span>
+          <input
+            type="number"
+            min={8}
+            max={64}
+            step={1}
+            value={settings.fontSize}
+            onChange={(event) =>
+              onApplyUiSetting(keyFor('FontSize'), Number.parseFloat(event.target.value) || 12)
+            }
+            style={inputStyle}
+          />
+        </label>
+
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            flexWrap: 'wrap',
+            gridColumn: '1 / -1',
+          }}
+        >
+          <label
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}
+          >
+            <input
+              type="checkbox"
+              checked={settings.fontWeight === 'bold'}
+              onChange={(event) =>
+                onApplyUiSetting(keyFor('FontWeight'), event.target.checked ? 'bold' : 'normal')
+              }
+            />
+            <span>Bold</span>
+          </label>
+          <label
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}
+          >
+            <input
+              type="checkbox"
+              checked={settings.fontStyle === 'italic'}
+              onChange={(event) =>
+                onApplyUiSetting(keyFor('FontStyle'), event.target.checked ? 'italic' : 'normal')
+              }
+            />
+            <span>Italic</span>
+          </label>
+        </div>
+
+        <label style={fieldStyle}>
+          <span>Font Color</span>
+          <input
+            type="color"
+            value={settings.fontColor}
+            onChange={(event) => onApplyUiSetting(keyFor('FontColor'), event.target.value)}
+            style={colorInputStyle}
+          />
+        </label>
+
+        {includeRenderControls ? (
+          <label style={fieldStyle}>
+            <span>Text Render</span>
+            <select
+              value={settings.textRenderMode}
+              onChange={(event) => onApplyUiSetting(keyFor('TextRenderMode'), event.target.value)}
+              style={inputStyle}
+            >
+              <option value="fill">Fill</option>
+              <option value="hollow">Hollow (Stroke)</option>
+            </select>
+          </label>
+        ) : (
+          <div />
+        )}
+
+        {includeRenderControls && settings.textRenderMode === 'hollow' ? (
+          <>
+            <label style={fieldStyle}>
+              <span>Text Stroke Color</span>
+              <input
+                type="color"
+                value={settings.textStrokeColor}
+                onChange={(event) => onApplyUiSetting(keyFor('TextStrokeColor'), event.target.value)}
+                style={colorInputStyle}
+              />
+            </label>
+            <label style={fieldStyle}>
+              <span>Text Stroke Width</span>
+              <input
+                type="number"
+                min={0.1}
+                max={10}
+                step={0.1}
+                value={settings.textStrokeWidth}
+                onChange={(event) =>
+                  onApplyUiSetting(
+                    keyFor('TextStrokeWidth'),
+                    Number.parseFloat(event.target.value) || 1.2
+                  )
+                }
+                style={inputStyle}
+              />
+            </label>
+          </>
+        ) : null}
+      </div>
+    );
   };
 
   return (
@@ -640,156 +1180,503 @@ export default function ThemeBuilderWorkspace({
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <strong style={{ fontSize: 12, opacity: 0.85 }}>
-                Theme Colors ({colorStudioTokens.length})
+                Theme Elements
               </strong>
-              <div style={{ display: 'inline-flex', gap: 6 }}>
-                <button
-                  type="button"
-                  onClick={() => setAllFoldersExpanded(true)}
-                  style={{
-                    border: '1px solid',
-                    borderColor: uiTheme.buttonBorder,
-                    borderRadius: 6,
-                    padding: '4px 8px',
-                    background: uiTheme.buttonBackground,
-                    color: uiTheme.buttonText,
-                    cursor: 'pointer',
-                    fontSize: 11,
-                    fontWeight: 600,
-                  }}
-                >
-                  Expand all
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAllFoldersExpanded(false)}
-                  style={{
-                    border: '1px solid',
-                    borderColor: uiTheme.buttonBorder,
-                    borderRadius: 6,
-                    padding: '4px 8px',
-                    background: uiTheme.buttonBackground,
-                    color: uiTheme.buttonText,
-                    cursor: 'pointer',
-                    fontSize: 11,
-                    fontWeight: 600,
-                  }}
-                >
-                  Collapse all
-                </button>
-              </div>
+              <span style={{ fontSize: 11, opacity: 0.7 }}>
+                {colorStudioTokens.length + styleStudioTokens.length} items
+              </span>
             </div>
             <div className="theme-builder-token-list">
-              {tokenFolders.length === 0 ? (
+              <div
+                className="theme-builder-folder"
+                style={{ borderColor: uiTheme.buttonBorder }}
+              >
+                <button
+                  type="button"
+                  className="theme-builder-folder-header"
+                  onClick={() => setIsThemeElementsExpanded((current) => !current)}
+                  aria-expanded={isThemeElementsExpanded}
+                  style={{ background: uiTheme.buttonBackground, color: uiTheme.buttonText }}
+                >
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
+                      {isThemeElementsExpanded ? '▾' : '▸'}
+                    </span>
+                    <span>Theme Elements</span>
+                  </span>
+                  <span style={{ opacity: 0.7 }}>{colorStudioTokens.length + styleStudioTokens.length}</span>
+                </button>
                 <div
+                  className="theme-builder-folder-body"
                   style={{
-                    border: '1px dashed',
                     borderColor: uiTheme.buttonBorder,
-                    borderRadius: 8,
-                    padding: 12,
-                    fontSize: 12,
-                    opacity: 0.75,
+                    display: isThemeElementsExpanded ? 'grid' : 'none',
                   }}
                 >
-                  No tokens match this filter.
-                </div>
-              ) : null}
-              {tokenFolders.map((folder) => {
-                const isExpanded = Boolean(expandedFolders[folder.key]);
-
-                return (
                   <div
-                    key={folder.key}
                     className="theme-builder-folder"
                     style={{ borderColor: uiTheme.buttonBorder }}
                   >
-                  <button
-                    type="button"
-                    className="theme-builder-folder-header"
-                    onClick={() =>
-                      setExpandedFolders((current) => ({
-                        ...current,
-                        [folder.key]: !Boolean(current[folder.key]),
-                      }))
-                    }
-                    aria-expanded={isExpanded}
-                    style={{ background: uiTheme.buttonBackground, color: uiTheme.buttonText }}
-                  >
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
-                        {isExpanded ? '▾' : '▸'}
+                    <button
+                      type="button"
+                      className="theme-builder-folder-header"
+                      onClick={() => setIsTypographySectionExpanded((current) => !current)}
+                      aria-expanded={isTypographySectionExpanded}
+                      style={{ background: uiTheme.buttonBackground, color: uiTheme.buttonText }}
+                    >
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
+                          {isTypographySectionExpanded ? '▾' : '▸'}
+                        </span>
+                        <span>Typography</span>
                       </span>
-                      <span>{folder.label}</span>
-                    </span>
-                    <span style={{ opacity: 0.7 }}>{folder.tokens.length}</span>
-                  </button>
+                      <span style={{ opacity: 0.7 }}>{typographyStyleTokens.length}</span>
+                    </button>
+                    <div
+                      className="theme-builder-folder-body"
+                      style={{
+                        borderColor: uiTheme.buttonBorder,
+                        display: isTypographySectionExpanded ? 'grid' : 'none',
+                      }}
+                    >
+                      <span style={{ fontSize: 11, opacity: 0.7 }}>
+                        Shared defaults apply everywhere unless one of the override groups below is customized.
+                      </span>
+
+                      {renderTypographyControls({
+                        prefix: null,
+                        settings: sharedTypography,
+                        includeRenderControls: true,
+                      })}
+
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        {TYPOGRAPHY_OVERRIDE_SECTIONS.map((section) => {
+                          const isExpanded = expandedTypographyOverrides[section.key] ?? false;
+                          const isCustomized = hasTypographyOverride(section.key);
+                          const sectionSettings =
+                            section.key === 'title'
+                              ? titleTypography
+                              : section.key === 'legend'
+                                ? legendTypography
+                                : section.key === 'axis'
+                                  ? axisTypography
+                                  : section.key === 'barLabel'
+                                    ? barLabelTypography
+                                    : section.key === 'tooltip'
+                                      ? tooltipTypography
+                                      : tableTypography;
+
+                          return (
+                            <div
+                              key={section.key}
+                              className="theme-builder-folder"
+                              style={{ borderColor: uiTheme.buttonBorder }}
+                            >
+                              <button
+                                type="button"
+                                className="theme-builder-folder-header"
+                                onClick={() =>
+                                  setExpandedTypographyOverrides((current) => ({
+                                    ...current,
+                                    [section.key]: !current[section.key],
+                                  }))
+                                }
+                                aria-expanded={isExpanded}
+                                style={{
+                                  background: uiTheme.buttonBackground,
+                                  color: uiTheme.buttonText,
+                                }}
+                              >
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                                  <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
+                                    {isExpanded ? '▾' : '▸'}
+                                  </span>
+                                  <span>{section.label}</span>
+                                </span>
+                                <span style={{ opacity: 0.7, fontSize: 11 }}>
+                                  {isCustomized ? 'custom' : 'shared'}
+                                </span>
+                              </button>
+                              <div
+                                className="theme-builder-folder-body"
+                                style={{
+                                  borderColor: uiTheme.buttonBorder,
+                                  display: isExpanded ? 'grid' : 'none',
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: 8,
+                                    flexWrap: 'wrap',
+                                  }}
+                                >
+                                  <span style={{ fontSize: 11, opacity: 0.72 }}>{section.description}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      onClearUiSettings(
+                                          [
+                                            ...TYPOGRAPHY_BASE_SUFFIXES.map((suffix) =>
+                                              getTypographySettingKey(section.key, suffix)
+                                            ),
+                                            ...(section.key === 'tooltip'
+                                              ? TOOLTIP_SURFACE_SUFFIXES.map((suffix) =>
+                                                  getTypographySettingKey(section.key, suffix)
+                                                )
+                                              : []),
+                                          ]
+                                      )
+                                    }
+                                    disabled={!isCustomized}
+                                    style={{
+                                      border: '1px solid',
+                                      borderColor: uiTheme.buttonBorder,
+                                      borderRadius: 6,
+                                      padding: '6px 10px',
+                                      background: uiTheme.buttonBackground,
+                                      color: uiTheme.buttonText,
+                                      cursor: isCustomized ? 'pointer' : 'not-allowed',
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      opacity: isCustomized ? 1 : 0.45,
+                                    }}
+                                  >
+                                    Reset to Shared
+                                  </button>
+                                </div>
+                                {renderTypographyControls({
+                                  prefix: section.key,
+                                  settings: sectionSettings,
+                                  includeRenderControls: false,
+                                })}
+                                {section.key === 'tooltip' ? renderTooltipSurfaceControls() : null}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {additionalTypographyStyleTokens.length > 0 ? (
+                        <details>
+                          <summary style={{ fontSize: 12, cursor: 'pointer', opacity: 0.8 }}>
+                            Additional typography tokens ({additionalTypographyStyleTokens.length})
+                          </summary>
+                          <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+                            {additionalTypographyStyleTokens.map((token) => (
+                              <label
+                                key={token.pathText}
+                                style={{
+                                  display: 'grid',
+                                  gap: 6,
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                }}
+                              >
+                                <span>{token.label}</span>
+                                <input
+                                  type={token.valueType === 'number' ? 'number' : 'text'}
+                                  step={token.valueType === 'number' ? '0.1' : undefined}
+                                  value={styleDraftByToken[token.pathText] ?? String(token.value)}
+                                  onChange={(event) =>
+                                    setStyleDraftByToken((current) => ({
+                                      ...current,
+                                      [token.pathText]: event.target.value,
+                                    }))
+                                  }
+                                  onBlur={() =>
+                                    onApplyStyleValueForToken(
+                                      token.pathText,
+                                      styleDraftByToken[token.pathText] ?? String(token.value)
+                                    )
+                                  }
+                                  onKeyDown={(event) => {
+                                    if (event.key === 'Enter') {
+                                      event.currentTarget.blur();
+                                    }
+                                  }}
+                                  style={{
+                                    border: '1px solid',
+                                    borderColor: uiTheme.buttonBorder,
+                                    borderRadius: 6,
+                                    padding: '6px 8px',
+                                    background: uiTheme.buttonBackground,
+                                    color: uiTheme.buttonText,
+                                    fontSize: 12,
+                                  }}
+                                />
+                              </label>
+                            ))}
+                          </div>
+                        </details>
+                      ) : null}
+                    </div>
+                  </div>
+
                   <div
-                    className="theme-builder-folder-body"
-                    style={{
-                      borderColor: uiTheme.buttonBorder,
-                      display: isExpanded ? 'grid' : 'none',
-                    }}
+                    className="theme-builder-folder"
+                    style={{ borderColor: uiTheme.buttonBorder }}
                   >
-                    {folder.tokens.map((token) => {
-                      const isActive = token.pathText === activeColorToken;
-                      return (
-                        <div
-                          key={token.pathText}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => {
-                            onSelectToken(token.pathText);
-                            onClearError();
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                              event.preventDefault();
-                              onSelectToken(token.pathText);
-                              onClearError();
-                            }
-                          }}
+                    <button
+                      type="button"
+                      className="theme-builder-folder-header"
+                      onClick={() => setIsWidthsSectionExpanded((current) => !current)}
+                      aria-expanded={isWidthsSectionExpanded}
+                      style={{ background: uiTheme.buttonBackground, color: uiTheme.buttonText }}
+                    >
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
+                          {isWidthsSectionExpanded ? '▾' : '▸'}
+                        </span>
+                        <span>Visual Density</span>
+                      </span>
+                      <span style={{ opacity: 0.7 }}>{widthStyleTokens.length}</span>
+                    </button>
+                    <div
+                      className="theme-builder-folder-body"
+                      style={{
+                        borderColor: uiTheme.buttonBorder,
+                        display: isWidthsSectionExpanded ? 'grid' : 'none',
+                      }}
+                    >
+                      {widthStyleTokens.length === 0 ? (
+                        <span style={{ fontSize: 12, opacity: 0.7 }}>No width tokens found.</span>
+                      ) : (
+                        <>
+                          <span style={{ fontSize: 11, opacity: 0.7 }}>
+                            Stroke, border, line width, corner radius, and opacity controls.
+                          </span>
+                          {widthStyleTokens.map((token) => (
+                            <label
+                              key={token.pathText}
+                              style={{
+                                display: 'grid',
+                                gap: 6,
+                                fontSize: 12,
+                                fontWeight: 600,
+                              }}
+                            >
+                              <span>{token.label}</span>
+                              <input
+                                type={token.valueType === 'number' ? 'number' : 'text'}
+                                step={token.valueType === 'number' ? '0.1' : undefined}
+                                value={styleDraftByToken[token.pathText] ?? String(token.value)}
+                                onChange={(event) =>
+                                  setStyleDraftByToken((current) => ({
+                                    ...current,
+                                    [token.pathText]: event.target.value,
+                                  }))
+                                }
+                                onBlur={() =>
+                                  onApplyStyleValueForToken(
+                                    token.pathText,
+                                    styleDraftByToken[token.pathText] ?? String(token.value)
+                                  )
+                                }
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Enter') {
+                                    event.currentTarget.blur();
+                                  }
+                                }}
+                                style={{
+                                  border: '1px solid',
+                                  borderColor: uiTheme.buttonBorder,
+                                  borderRadius: 6,
+                                  padding: '6px 8px',
+                                  background: uiTheme.buttonBackground,
+                                  color: uiTheme.buttonText,
+                                  fontSize: 12,
+                                }}
+                              />
+                            </label>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div
+                    className="theme-builder-folder"
+                    style={{ borderColor: uiTheme.buttonBorder }}
+                  >
+                    <button
+                      type="button"
+                      className="theme-builder-folder-header"
+                      onClick={() => setIsColorsSectionExpanded((current) => !current)}
+                      aria-expanded={isColorsSectionExpanded}
+                      style={{ background: uiTheme.buttonBackground, color: uiTheme.buttonText }}
+                    >
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
+                          {isColorsSectionExpanded ? '▾' : '▸'}
+                        </span>
+                        <span>Colors</span>
+                      </span>
+                      <span style={{ opacity: 0.7 }}>{colorStudioTokens.length}</span>
+                    </button>
+                    <div
+                      className="theme-builder-folder-body"
+                      style={{
+                        borderColor: uiTheme.buttonBorder,
+                        display: isColorsSectionExpanded ? 'grid' : 'none',
+                      }}
+                    >
+                      <div style={{ display: 'inline-flex', gap: 6 }}>
+                        <button
+                          type="button"
+                          onClick={() => setAllFoldersExpanded(true)}
                           style={{
                             border: '1px solid',
-                            borderColor: isActive ? uiTheme.buttonText : uiTheme.buttonBorder,
-                            background: isActive ? uiTheme.buttonText : uiTheme.buttonBackground,
-                            color: isActive ? uiTheme.buttonBackground : uiTheme.buttonText,
-                            borderRadius: 8,
-                            padding: '8px 10px',
+                            borderColor: uiTheme.buttonBorder,
+                            borderRadius: 6,
+                            padding: '4px 8px',
+                            background: uiTheme.buttonBackground,
+                            color: uiTheme.buttonText,
                             cursor: 'pointer',
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: 600,
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            gap: 10,
                           }}
                         >
-                          <span style={{ textAlign: 'left' }}>{token.label}</span>
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              openTokenColorEditor(token, event.currentTarget);
-                            }}
-                            aria-label={`Edit color for ${token.label}`}
-                            style={{
-                              width: 14,
-                              height: 14,
-                              borderRadius: 4,
-                              background: colorDraftByToken[token.pathText] ?? token.value,
-                              border: '1px solid',
-                              borderColor: isActive ? uiTheme.buttonBackground : uiTheme.buttonBorder,
-                              padding: 0,
-                              cursor: 'pointer',
-                            }}
-                          />
+                          Expand color groups
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAllFoldersExpanded(false)}
+                          style={{
+                            border: '1px solid',
+                            borderColor: uiTheme.buttonBorder,
+                            borderRadius: 6,
+                            padding: '4px 8px',
+                            background: uiTheme.buttonBackground,
+                            color: uiTheme.buttonText,
+                            cursor: 'pointer',
+                            fontSize: 11,
+                            fontWeight: 600,
+                          }}
+                        >
+                          Collapse color groups
+                        </button>
+                      </div>
+
+                      {tokenFolders.length === 0 ? (
+                        <div
+                          style={{
+                            border: '1px dashed',
+                            borderColor: uiTheme.buttonBorder,
+                            borderRadius: 8,
+                            padding: 12,
+                            fontSize: 12,
+                            opacity: 0.75,
+                          }}
+                        >
+                          No tokens match this filter.
                         </div>
-                      );
-                    })}
+                      ) : null}
+
+                      {tokenFolders.map((folder) => {
+                        const isExpanded = Boolean(expandedFolders[folder.key]);
+
+                        return (
+                          <div
+                            key={folder.key}
+                            className="theme-builder-folder"
+                            style={{ borderColor: uiTheme.buttonBorder }}
+                          >
+                            <button
+                              type="button"
+                              className="theme-builder-folder-header"
+                              onClick={() =>
+                                setExpandedFolders((current) => ({
+                                  ...current,
+                                  [folder.key]: !Boolean(current[folder.key]),
+                                }))
+                              }
+                              aria-expanded={isExpanded}
+                              style={{ background: uiTheme.buttonBackground, color: uiTheme.buttonText }}
+                            >
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
+                                  {isExpanded ? '▾' : '▸'}
+                                </span>
+                                <span>{folder.label}</span>
+                              </span>
+                              <span style={{ opacity: 0.7 }}>{folder.tokens.length}</span>
+                            </button>
+                            <div
+                              className="theme-builder-folder-body"
+                              style={{
+                                borderColor: uiTheme.buttonBorder,
+                                display: isExpanded ? 'grid' : 'none',
+                              }}
+                            >
+                              {folder.tokens.map((token) => {
+                                const isActive = token.pathText === activeColorToken;
+                                return (
+                                  <div
+                                    key={token.pathText}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => {
+                                      onSelectToken(token.pathText);
+                                      onClearError();
+                                    }}
+                                    onKeyDown={(event) => {
+                                      if (event.key === 'Enter' || event.key === ' ') {
+                                        event.preventDefault();
+                                        onSelectToken(token.pathText);
+                                        onClearError();
+                                      }
+                                    }}
+                                    style={{
+                                      border: '1px solid',
+                                      borderColor: isActive ? uiTheme.buttonText : uiTheme.buttonBorder,
+                                      background: isActive ? uiTheme.buttonText : uiTheme.buttonBackground,
+                                      color: isActive ? uiTheme.buttonBackground : uiTheme.buttonText,
+                                      borderRadius: 8,
+                                      padding: '8px 10px',
+                                      cursor: 'pointer',
+                                      fontSize: 12,
+                                      fontWeight: 600,
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      gap: 10,
+                                    }}
+                                  >
+                                    <span style={{ textAlign: 'left' }}>{token.label}</span>
+                                    <button
+                                      type="button"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        openTokenColorEditor(token, event.currentTarget);
+                                      }}
+                                      aria-label={`Edit color for ${token.label}`}
+                                      style={{
+                                        width: 14,
+                                        height: 14,
+                                        borderRadius: 4,
+                                        background: colorDraftByToken[token.pathText] ?? token.value,
+                                        border: '1px solid',
+                                        borderColor: isActive
+                                          ? uiTheme.buttonBackground
+                                          : uiTheme.buttonBorder,
+                                        padding: 0,
+                                        cursor: 'pointer',
+                                      }}
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  </div>
-                );
-              })}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -797,7 +1684,11 @@ export default function ThemeBuilderWorkspace({
             className="theme-builder-card"
             style={{ borderColor: uiTheme.buttonBorder, display: 'grid', gap: 12 }}
           >
-            <ThemePreviewChart uiTheme={uiTheme} colorDraftByToken={colorDraftByToken} />
+            <ThemePreviewChart
+              uiTheme={uiTheme}
+              editableThemeUi={editableThemeUi}
+              colorDraftByToken={colorDraftByToken}
+            />
           </div>
         </div>
       </div>

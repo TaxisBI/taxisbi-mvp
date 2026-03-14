@@ -87,7 +87,9 @@ export default function ThemeBuilderPage({
 
       <ThemeBuilderWorkspace
         uiTheme={builder.uiTheme}
+        editableThemeUi={builder.editableThemeUi}
         colorStudioTokens={builder.colorStudioTokens}
+        styleStudioTokens={builder.styleStudioTokens}
         activeColorToken={builder.activeColorToken}
         colorDraftByToken={builder.colorDraftByToken}
         themeSaveDraft={builder.themeSaveDraft}
@@ -99,6 +101,9 @@ export default function ThemeBuilderPage({
         onSelectToken={builder.setActiveColorToken}
         onClearError={() => builder.setColorStudioError(null)}
         onApplyHexForToken={builder.applyHexToToken}
+        onApplyStyleValueForToken={builder.applyStyleValueToToken}
+        onApplyUiSetting={builder.applyUiSetting}
+        onClearUiSettings={builder.clearUiSettings}
         onSaveTheme={builder.saveGeneratedTheme}
         onUpdateThemeSaveDraft={(patch) =>
           builder.setThemeSaveDraft((current) => ({

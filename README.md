@@ -12,3 +12,9 @@ The runtime backend/API code lives in `src/server`.
 
 The top-level `api` folder is not used for runtime server code in this repo.
 If reintroduced later, it should be limited to API contracts/docs (for example OpenAPI files), not executable backend implementation.
+
+## UI Language Guide
+
+For consistent React/UI terminology and clearer implementation requests, see:
+
+- `docs/react-terms.md`

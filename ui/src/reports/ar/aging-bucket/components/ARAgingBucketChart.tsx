@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import VegaChartRenderer from '../../../../charts/components/VegaChartRenderer';
+import { applyThemeToChart } from '../../../../theme/applyThemeToChart';
 
 export type CanvasSizeMode =
   | 'fit-width'
@@ -204,105 +205,14 @@ export default function ARAgingBucketChart({
 
       const mergedSpec = selectedTheme?.spec ? deepMerge(json.spec, selectedTheme.spec) : json.spec;
 
-      const resolvedUiTheme: ResolvedUiTheme = {
-        pageBackground: (selectedUi.pageBackground ?? fallbackUi.pageBackground ?? '') as string,
-        pageText: (selectedUi.pageText ?? fallbackUi.pageText ?? '') as string,
-        cardBackground: (selectedUi.cardBackground ?? fallbackUi.cardBackground ?? '') as string,
-        cardShadow: (selectedUi.cardShadow ?? fallbackUi.cardShadow ?? '') as string,
-        buttonBackground: (selectedUi.buttonBackground ?? fallbackUi.buttonBackground ?? '') as string,
-        buttonText: (selectedUi.buttonText ?? fallbackUi.buttonText ?? '') as string,
-        buttonBorder: (selectedUi.buttonBorder ?? fallbackUi.buttonBorder ?? '') as string,
-        hoverColor: (selectedUi.hoverColor ?? fallbackUi.hoverColor ?? '') as string,
-        fontFamily: (selectedUi.fontFamily ?? fallbackUi.fontFamily ?? 'sans-serif') as string,
-        modalOverlayBackground: (selectedUi.modalOverlayBackground ??
-          fallbackUi.modalOverlayBackground ??
-          '') as string,
-        statusDanger: (selectedUi.statusDanger ?? fallbackUi.statusDanger ?? '') as string,
-        statusSuccess: (selectedUi.statusSuccess ?? fallbackUi.statusSuccess ?? '') as string,
-        statusOnColor: (selectedUi.statusOnColor ?? fallbackUi.statusOnColor ?? '') as string,
-        chartBarDefaultColor: (selectedUi.chartBarDefaultColor ??
-          fallbackUi.chartBarDefaultColor ??
-          selectedUi.hoverColor ??
-          fallbackUi.hoverColor ??
-          '') as string,
-        chartBarHoverColor: (selectedUi.chartBarHoverColor ??
-          fallbackUi.chartBarHoverColor ??
-          selectedUi.hoverColor ??
-          fallbackUi.hoverColor ??
-          '') as string,
-        chartBarDefaultOpacity:
-          typeof selectedUi.chartBarDefaultOpacity === 'number'
-            ? selectedUi.chartBarDefaultOpacity
-            : typeof fallbackUi.chartBarDefaultOpacity === 'number'
-              ? fallbackUi.chartBarDefaultOpacity
-            : 0.72,
-        chartBarHoverOpacity:
-          typeof selectedUi.chartBarHoverOpacity === 'number'
-            ? selectedUi.chartBarHoverOpacity
-            : typeof fallbackUi.chartBarHoverOpacity === 'number'
-              ? fallbackUi.chartBarHoverOpacity
-            : 1,
-        chartBarDefaultStrokeColor: (selectedUi.chartBarDefaultStrokeColor ??
-          fallbackUi.chartBarDefaultStrokeColor ??
-          selectedUi.chartBarDefaultColor ??
-          fallbackUi.chartBarDefaultColor ??
-          '') as string,
-        chartBarHoverStrokeColor: (selectedUi.chartBarHoverStrokeColor ??
-          fallbackUi.chartBarHoverStrokeColor ??
-          selectedUi.chartBarHoverColor ??
-          fallbackUi.chartBarHoverColor ??
-          selectedUi.hoverColor ??
-          fallbackUi.hoverColor ??
-          '') as string,
-        chartBarDefaultStrokeOpacity:
-          typeof selectedUi.chartBarDefaultStrokeOpacity === 'number'
-            ? selectedUi.chartBarDefaultStrokeOpacity
-            : typeof fallbackUi.chartBarDefaultStrokeOpacity === 'number'
-              ? fallbackUi.chartBarDefaultStrokeOpacity
-            : 1,
-        chartBarHoverStrokeOpacity:
-          typeof selectedUi.chartBarHoverStrokeOpacity === 'number'
-            ? selectedUi.chartBarHoverStrokeOpacity
-            : typeof fallbackUi.chartBarHoverStrokeOpacity === 'number'
-              ? fallbackUi.chartBarHoverStrokeOpacity
-            : 1,
-        chartBarDefaultStrokeWidth:
-          typeof selectedUi.chartBarDefaultStrokeWidth === 'number'
-            ? selectedUi.chartBarDefaultStrokeWidth
-            : typeof fallbackUi.chartBarDefaultStrokeWidth === 'number'
-              ? fallbackUi.chartBarDefaultStrokeWidth
-            : 2,
-        chartBarHoverStrokeWidth:
-          typeof selectedUi.chartBarHoverStrokeWidth === 'number'
-            ? selectedUi.chartBarHoverStrokeWidth
-            : typeof fallbackUi.chartBarHoverStrokeWidth === 'number'
-              ? fallbackUi.chartBarHoverStrokeWidth
-            : 3,
-        overlapPalette: Array.isArray(selectedUi.overlapPalette)
-          ? (selectedUi.overlapPalette as Array<{ border: string; background: string }>).filter(
-              (entry) =>
-                entry &&
-                typeof entry.border === 'string' &&
-                typeof entry.background === 'string'
-            )
-          : Array.isArray(fallbackUi.overlapPalette)
-            ? (fallbackUi.overlapPalette as Array<{ border: string; background: string }>).filter(
-                (entry) =>
-                  entry &&
-                  typeof entry.border === 'string' &&
-                  typeof entry.background === 'string'
-              )
-            : [],
-        tooltipTheme:
-          ((selectedUi.tooltipTheme ?? fallbackUi.tooltipTheme ?? 'light') as 'light' | 'dark'),
-      };
-
+      // Use generic theme application utility
+      const chartTheme = applyThemeToChart(selectedTheme ?? {});
       setUiTheme({
-        cardBackground: resolvedUiTheme.cardBackground,
-        cardShadow: resolvedUiTheme.cardShadow,
-        tooltipTheme: resolvedUiTheme.tooltipTheme,
+        cardBackground: chartTheme.cardBackground,
+        cardShadow: chartTheme.cardShadow,
+        tooltipTheme: chartTheme.tooltipTheme,
       });
-      onUiThemeResolved?.(resolvedUiTheme);
+      onUiThemeResolved?.(chartTheme);
 
       const balances = (json.data ?? [])
         .map((row: any) => Number(row.Balance))

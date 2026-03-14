@@ -2,6 +2,18 @@ import { Component, ReactNode, useEffect, useState } from 'react';
 import { VegaEmbed } from 'react-vega';
 import type { CanvasSizeMode } from '../../reports/ar/aging-bucket/components/ARAgingBucketChart';
 
+type VegaTooltipStyle = {
+  fontFamily?: string;
+  fontSize?: number;
+  fontWeight?: string;
+  fontStyle?: string;
+  color?: string;
+  backgroundColor?: string;
+  borderColor?: string;
+  borderWidth?: number;
+  padding?: number;
+};
+
 type ChartErrorBoundaryProps = {
   children: ReactNode;
 };
@@ -54,6 +66,7 @@ type VegaChartRendererProps = {
   tooltipTheme: 'light' | 'dark';
   cardBackground: string;
   cardShadow: string;
+  tooltipStyle?: VegaTooltipStyle;
   canvasSizeMode?: CanvasSizeMode;
   customCanvasSize?: { width: number; height: number };
 };
@@ -63,6 +76,7 @@ export default function VegaChartRenderer({
   tooltipTheme,
   cardBackground,
   cardShadow,
+  tooltipStyle,
   canvasSizeMode = 'fit-width',
   customCanvasSize = { width: 1280, height: 720 },
 }: VegaChartRendererProps) {
@@ -71,6 +85,48 @@ export default function VegaChartRenderer({
   useEffect(() => {
     setEmbedErrorMessage(null);
   }, [spec]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined' || !tooltipStyle) {
+      return;
+    }
+
+    const rootStyle = document.documentElement.style;
+    const entries: Array<[string, string | undefined]> = [
+      ['--taxisbi-vega-tooltip-font-family', tooltipStyle.fontFamily],
+      [
+        '--taxisbi-vega-tooltip-font-size',
+        typeof tooltipStyle.fontSize === 'number' ? `${tooltipStyle.fontSize}px` : undefined,
+      ],
+      ['--taxisbi-vega-tooltip-font-weight', tooltipStyle.fontWeight],
+      ['--taxisbi-vega-tooltip-font-style', tooltipStyle.fontStyle],
+      ['--taxisbi-vega-tooltip-color', tooltipStyle.color],
+      ['--taxisbi-vega-tooltip-background', tooltipStyle.backgroundColor],
+      ['--taxisbi-vega-tooltip-border-color', tooltipStyle.borderColor],
+      [
+        '--taxisbi-vega-tooltip-border-width',
+        typeof tooltipStyle.borderWidth === 'number' ? `${tooltipStyle.borderWidth}px` : undefined,
+      ],
+      [
+        '--taxisbi-vega-tooltip-padding',
+        typeof tooltipStyle.padding === 'number' ? `${tooltipStyle.padding}px` : undefined,
+      ],
+    ];
+
+    entries.forEach(([key, value]) => {
+      if (value) {
+        rootStyle.setProperty(key, value);
+      } else {
+        rootStyle.removeProperty(key);
+      }
+    });
+
+    return () => {
+      entries.forEach(([key]) => {
+        rootStyle.removeProperty(key);
+      });
+    };
+  }, [tooltipStyle]);
 
   const layoutByMode: Record<
     CanvasSizeMode,
@@ -118,6 +174,35 @@ export default function VegaChartRenderer({
         transition: 'background-color 200ms ease, box-shadow 200ms ease',
       }}
     >
+      <style>{`
+        #vg-tooltip-element,
+        #vg-tooltip-element.vg-tooltip,
+        #vg-tooltip-element h2,
+        #vg-tooltip-element table,
+        #vg-tooltip-element thead,
+        #vg-tooltip-element tbody,
+        #vg-tooltip-element tr,
+        #vg-tooltip-element th,
+        #vg-tooltip-element td,
+        #vg-tooltip-element span,
+        #vg-tooltip-element div {
+          font-family: var(--taxisbi-vega-tooltip-font-family, inherit) !important;
+          font-size: var(--taxisbi-vega-tooltip-font-size, inherit) !important;
+          font-weight: var(--taxisbi-vega-tooltip-font-weight, inherit) !important;
+          font-style: var(--taxisbi-vega-tooltip-font-style, inherit) !important;
+          color: var(--taxisbi-vega-tooltip-color, inherit) !important;
+        }
+
+        #vg-tooltip-element,
+        #vg-tooltip-element.vg-tooltip {
+          background: var(--taxisbi-vega-tooltip-background, unset) !important;
+          border-color: var(--taxisbi-vega-tooltip-border-color, currentColor) !important;
+          border-style: solid !important;
+          border-width: var(--taxisbi-vega-tooltip-border-width, 1px) !important;
+          padding: var(--taxisbi-vega-tooltip-padding, 8px) !important;
+          box-sizing: border-box !important;
+        }
+      `}</style>
       {embedErrorMessage ? (
         <div
           style={{

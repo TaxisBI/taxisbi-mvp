@@ -50,6 +50,15 @@ export type ColorStudioToken = {
   value: string;
 };
 
+export type StyleStudioToken = {
+  path: ThemePathSegment[];
+  pathText: string;
+  label: string;
+  value: number | string;
+  valueType: 'number' | 'text';
+  group: 'widths' | 'typography';
+};
+
 export type ThemeBuilderUiTheme = {
   pageBackground: string;
   pageText: string;

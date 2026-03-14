@@ -83,6 +83,7 @@ Error behavior:
 ### Product and architecture docs
 - docs/futurestate.md: Near-term future architecture direction.
 - docs/vega-terms.md: Vega/Vega-Lite vocabulary and precision reference.
+- docs/react-terms.md: React and UI terminology guide for clearer requests and reviews.
 - docs/uitest.md: UI test-related notes.
 
 ## Pack Structure (Current Convention)

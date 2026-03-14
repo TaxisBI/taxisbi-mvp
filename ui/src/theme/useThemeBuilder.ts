@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchThemes, saveTheme } from './api';
 import {
   collectColorStudioTokens,
+  collectStyleStudioTokens,
   createDefaultThemeSaveDraft,
   hexToRgb,
   isRecord,
@@ -11,7 +12,14 @@ import {
   setValueAtPath,
   toThemeKeyCandidate,
 } from './utils';
-import { ColorStudioToken, ThemeBuilderContext, ThemeDefinition, ThemeOption, ThemeSaveDraft } from './types';
+import {
+  ColorStudioToken,
+  StyleStudioToken,
+  ThemeBuilderContext,
+  ThemeDefinition,
+  ThemeOption,
+  ThemeSaveDraft,
+} from './types';
 
 function fallbackThemeOrder(key: string) {
   if (key === 'light') {
@@ -35,6 +43,7 @@ export function useThemeBuilder(context: ThemeBuilderContext) {
 
   const [activeColorToken, setActiveColorToken] = useState('');
   const [colorStudioTokens, setColorStudioTokens] = useState<ColorStudioToken[]>([]);
+  const [styleStudioTokens, setStyleStudioTokens] = useState<StyleStudioToken[]>([]);
   const [editableThemeUi, setEditableThemeUi] = useState<Record<string, unknown> | null>(null);
   const [colorDraftByToken, setColorDraftByToken] = useState<Record<string, string>>({});
 
@@ -75,10 +84,12 @@ export function useThemeBuilder(context: ThemeBuilderContext) {
       const uiSource = isRecord(sourceTheme?.ui) ? sourceTheme.ui : {};
       const editableUi = JSON.parse(JSON.stringify(uiSource)) as Record<string, unknown>;
       const tokens = collectColorStudioTokens(editableUi);
+      const styleTokens = collectStyleStudioTokens(editableUi);
       const draftMap = Object.fromEntries(tokens.map((token) => [token.pathText, token.value]));
 
       setEditableThemeUi(editableUi);
       setColorStudioTokens(tokens);
+      setStyleStudioTokens(styleTokens);
       setColorDraftByToken(draftMap);
 
       const firstToken = tokens[0]?.pathText ?? '';
@@ -203,6 +214,84 @@ export function useThemeBuilder(context: ThemeBuilderContext) {
     applyHexToActiveToken(rgbToHex(r, g, b));
   };
 
+  const applyStyleValueToToken = (tokenPath: string, rawValue: string) => {
+    const token = styleStudioTokens.find((entry) => entry.pathText === tokenPath);
+    if (!token || !editableThemeUi) {
+      setColorStudioError('No editable style token selected.');
+      return;
+    }
+
+    const nextValue =
+      token.valueType === 'number'
+        ? Number.parseFloat(rawValue)
+        : rawValue;
+
+    if (token.valueType === 'number' && !Number.isFinite(nextValue)) {
+      setColorStudioError('Enter a valid number for this style setting.');
+      return;
+    }
+
+    setColorStudioError(null);
+    setEditableThemeUi((current) => (current ? setValueAtPath(current, token.path, nextValue) : current));
+    setStyleStudioTokens((current) =>
+      current.map((entry) => (entry.pathText === tokenPath ? { ...entry, value: nextValue } : entry))
+    );
+  };
+
+  const applyUiSetting = (key: string, value: unknown) => {
+    setEditableThemeUi((current) => {
+      const next = {
+        ...(current ?? {}),
+        [key]: value,
+      };
+
+      const nextColorTokens = collectColorStudioTokens(next);
+      const nextStyleTokens = collectStyleStudioTokens(next);
+      const nextDraftMap = Object.fromEntries(
+        nextColorTokens.map((token) => [token.pathText, token.value])
+      );
+
+      setColorStudioTokens(nextColorTokens);
+      setStyleStudioTokens(nextStyleTokens);
+      setColorDraftByToken(nextDraftMap);
+      setActiveColorToken((previous) =>
+        nextColorTokens.some((token) => token.pathText === previous)
+          ? previous
+          : nextColorTokens[0]?.pathText ?? ''
+      );
+
+      return next;
+    });
+    setColorStudioError(null);
+  };
+
+  const clearUiSettings = (keys: string[]) => {
+    setEditableThemeUi((current) => {
+      const next = { ...(current ?? {}) };
+      keys.forEach((key) => {
+        delete next[key];
+      });
+
+      const nextColorTokens = collectColorStudioTokens(next);
+      const nextStyleTokens = collectStyleStudioTokens(next);
+      const nextDraftMap = Object.fromEntries(
+        nextColorTokens.map((token) => [token.pathText, token.value])
+      );
+
+      setColorStudioTokens(nextColorTokens);
+      setStyleStudioTokens(nextStyleTokens);
+      setColorDraftByToken(nextDraftMap);
+      setActiveColorToken((previous) =>
+        nextColorTokens.some((token) => token.pathText === previous)
+          ? previous
+          : nextColorTokens[0]?.pathText ?? ''
+      );
+
+      return next;
+    });
+    setColorStudioError(null);
+  };
+
   const saveGeneratedTheme = async () => {
     if (!editableThemeUi) {
       setColorStudioError('No editable theme data was found.');
@@ -270,7 +359,9 @@ export function useThemeBuilder(context: ThemeBuilderContext) {
     selectedThemeKey,
     selectBaseTheme,
     uiTheme,
+    editableThemeUi,
     colorStudioTokens,
+    styleStudioTokens,
     activeColorToken,
     colorDraftByToken,
     hexDraft,
@@ -286,6 +377,9 @@ export function useThemeBuilder(context: ThemeBuilderContext) {
     applyHexToActiveToken,
     applyHexToToken,
     applyRgbToActiveToken,
+    applyStyleValueToToken,
+    applyUiSetting,
+    clearUiSettings,
     saveGeneratedTheme,
     toThemeKeyCandidate,
   };
