@@ -1,0 +1,59 @@
+# AR (Accounts Receivable) data pack
+#
+# This pack demonstrates how pack metadata drives the chart-builder library
+# instead of hand-authored .vl.json files.  Each entry under `charts` maps a
+# chart ID to a chart archetype and its config.  The server calls
+# buildChartSpec() with this config at runtime.
+
+name: ar
+version: "1.0.0"
+description: Accounts Receivable aging and collection analytics.
+
+# ---------------------------------------------------------------------------
+# Data sources
+# ---------------------------------------------------------------------------
+sources:
+  ar_aging:
+    # Parameterised SQL – bucket labels are injected at query time so the
+    # sort order below can mirror the actual bucket definitions.
+    query: |
+      SELECT
+        AgingBucket,
+        SUM(Balance) AS Balance
+      FROM ar_aging_view
+      GROUP BY AgingBucket
+
+# ---------------------------------------------------------------------------
+# Charts
+# ---------------------------------------------------------------------------
+charts:
+  aging_by_bucket:
+    type: categorical_bar
+    title: AR Aging by Bucket
+    xField: AgingBucket
+    xType: ordinal
+    yField: Balance
+    yType: quantitative
+    # Sort mirrors the parameterised bucket order defined in the query.
+    # Update this list when the bucket definitions change.
+    sort:
+      - "Current"
+      - "1-30"
+      - "31-60"
+      - "61-90"
+      - "90+"
+    showDataLabels: true
+
+  total_ar:
+    type: kpi_card
+    title: Total AR
+    valueField: TotalBalance
+    subtitle: Sum of all open invoices
+
+  ar_over_time:
+    type: time_series_line
+    title: AR Balance Over Time
+    xField: SnapshotDate
+    yField: Balance
+    yType: quantitative
+    showPoints: false
