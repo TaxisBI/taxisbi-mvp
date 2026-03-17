@@ -78,6 +78,44 @@
         "axisGridWidth": { "type": "number", "minimum": 0 },
         "axisTickWidth": { "type": "number", "minimum": 0 },
         "axisDomainWidth": { "type": "number", "minimum": 0 },
+        "legendSymbolSize": { "type": "number", "minimum": 0 },
+        "legendSymbolStrokeWidth": { "type": "number", "minimum": 0 },
+        "legendLabelLimit": { "type": "number", "minimum": 0 },
+        "legendRowPadding": { "type": "number", "minimum": 0 },
+        "legendColumnPadding": { "type": "number", "minimum": 0 },
+        "legendOrient": {
+          "type": "string",
+          "enum": ["left", "right", "top", "bottom", "top-left", "top-right", "bottom-left", "bottom-right"]
+        },
+        "axisLabelAngle": { "type": "number" },
+        "axisLabelLimit": { "type": "number", "minimum": 0 },
+        "axisLabelPadding": { "type": "number", "minimum": 0 },
+        "axisLabelOverlapStrategy": { "type": "string", "enum": ["parity", "greedy", "none"] },
+        "axisNumberFormat": { "type": "string" },
+        "axisDateFormat": { "type": "string" },
+        "xAxisGridEnabled": { "type": "number", "enum": [0, 1] },
+        "yAxisGridEnabled": { "type": "number", "enum": [0, 1] },
+        "chartPointShape": {
+          "type": "string",
+          "enum": ["circle", "square", "cross", "diamond", "triangle-up", "triangle-down"]
+        },
+        "chartPointSize": { "type": "number", "minimum": 0 },
+        "chartPointOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "chartAreaOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "chartLineInterpolate": {
+          "type": "string",
+          "enum": ["linear", "step", "step-after", "step-before", "basis", "cardinal", "monotone"]
+        },
+        "referenceLineColor": { "type": "string" },
+        "referenceLineWidth": { "type": "number", "minimum": 0 },
+        "referenceLineDashStyle": { "type": "string", "enum": ["solid", "dotted", "dashed"] },
+        "referenceLineLabelColor": { "type": "string" },
+        "referenceLineLabelFontSize": { "type": "number", "minimum": 1 },
+        "chartSeriesSelectedColor": { "type": "string" },
+        "chartSeriesSelectedOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "chartSeriesMutedColor": { "type": "string" },
+        "chartSeriesMutedOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "chartSeriesInactiveOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
         "colorTokens": {
           "type": "object",
           "properties": {

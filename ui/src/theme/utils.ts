@@ -178,6 +178,10 @@ function classifyStyleToken(pathText: string): 'widths' | 'typography' | null {
     return 'typography';
   }
 
+  if (/format|orient|overlap|interpolate|shape|enabled|tickcount/.test(normalized)) {
+    return 'typography';
+  }
+
   return null;
 }
 

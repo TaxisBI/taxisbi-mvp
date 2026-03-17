@@ -456,6 +456,7 @@ export default function ARAgingBucketChart({
       const gridDash = resolveDash(resolvedUiTheme.axisGridDashStyle);
       const domainDash = resolveDash(resolvedUiTheme.axisDomainDashStyle);
       const tickDash = resolveDash(resolvedUiTheme.axisTickDashStyle);
+      const referenceDash = resolveDash(resolvedUiTheme.referenceLineDashStyle);
 
       const fullSpec = {
         ...mergedSpec,
@@ -479,6 +480,11 @@ export default function ARAgingBucketChart({
             labelFont: mergedSpec.config?.axis?.labelFont ?? resolvedUiTheme.fontFamily,
             titleFont: mergedSpec.config?.axis?.titleFont ?? resolvedUiTheme.fontFamily,
             tickCount: mergedSpec.config?.axis?.tickCount ?? resolvedUiTheme.axisTickCount,
+            labelAngle: mergedSpec.config?.axis?.labelAngle ?? resolvedUiTheme.axisLabelAngle,
+            labelLimit: mergedSpec.config?.axis?.labelLimit ?? resolvedUiTheme.axisLabelLimit,
+            labelPadding: mergedSpec.config?.axis?.labelPadding ?? resolvedUiTheme.axisLabelPadding,
+            labelOverlap:
+              mergedSpec.config?.axis?.labelOverlap ?? resolvedUiTheme.axisLabelOverlapStrategy,
             gridDash: mergedSpec.config?.axis?.gridDash ?? gridDash,
             domainDash: mergedSpec.config?.axis?.domainDash ?? domainDash,
             tickDash: mergedSpec.config?.axis?.tickDash ?? tickDash,
@@ -486,12 +492,34 @@ export default function ARAgingBucketChart({
             tickWidth: mergedSpec.config?.axis?.tickWidth ?? resolvedUiTheme.axisTickWidth,
             domainWidth: mergedSpec.config?.axis?.domainWidth ?? resolvedUiTheme.axisDomainWidth,
           },
+          axisTemporal: {
+            ...(mergedSpec.config?.axisTemporal ?? {}),
+            format: mergedSpec.config?.axisTemporal?.format ?? resolvedUiTheme.axisDateFormat,
+          },
+          axisX: {
+            ...(mergedSpec.config?.axisX ?? {}),
+            grid:
+              mergedSpec.config?.axisX?.grid ?? (resolvedUiTheme.xAxisGridEnabled > 0 ? true : false),
+          },
+          axisY: {
+            ...(mergedSpec.config?.axisY ?? {}),
+            grid:
+              mergedSpec.config?.axisY?.grid ?? (resolvedUiTheme.yAxisGridEnabled > 0 ? true : false),
+          },
           legend: {
             ...(mergedSpec.config?.legend ?? {}),
             labelFont: mergedSpec.config?.legend?.labelFont ?? resolvedUiTheme.fontFamily,
             titleFont: mergedSpec.config?.legend?.titleFont ?? resolvedUiTheme.fontFamily,
             cornerRadius:
               mergedSpec.config?.legend?.cornerRadius ?? resolvedUiTheme.chartLegendCornerRadius,
+            symbolSize: mergedSpec.config?.legend?.symbolSize ?? resolvedUiTheme.legendSymbolSize,
+            symbolStrokeWidth:
+              mergedSpec.config?.legend?.symbolStrokeWidth ?? resolvedUiTheme.legendSymbolStrokeWidth,
+            labelLimit: mergedSpec.config?.legend?.labelLimit ?? resolvedUiTheme.legendLabelLimit,
+            rowPadding: mergedSpec.config?.legend?.rowPadding ?? resolvedUiTheme.legendRowPadding,
+            columnPadding:
+              mergedSpec.config?.legend?.columnPadding ?? resolvedUiTheme.legendColumnPadding,
+            orient: mergedSpec.config?.legend?.orient ?? resolvedUiTheme.legendOrient,
           },
           header: {
             ...(mergedSpec.config?.header ?? {}),
@@ -523,6 +551,12 @@ export default function ARAgingBucketChart({
             color: mergedSpec.config?.line?.color ?? resolvedUiTheme.chartLineStrokeColor,
             fill: mergedSpec.config?.line?.fill ?? resolvedUiTheme.chartLineFillColor,
             strokeWidth: mergedSpec.config?.line?.strokeWidth ?? resolvedUiTheme.chartLineStrokeWidth,
+            interpolate: mergedSpec.config?.line?.interpolate ?? resolvedUiTheme.chartLineInterpolate,
+          },
+          area: {
+            ...(mergedSpec.config?.area ?? {}),
+            opacity: mergedSpec.config?.area?.opacity ?? resolvedUiTheme.chartAreaOpacity,
+            interpolate: mergedSpec.config?.area?.interpolate ?? resolvedUiTheme.chartLineInterpolate,
           },
           point: {
             ...(mergedSpec.config?.point ?? {}),
@@ -530,6 +564,29 @@ export default function ARAgingBucketChart({
             stroke: mergedSpec.config?.point?.stroke ?? resolvedUiTheme.chartLinePointStrokeColor,
             strokeWidth:
               mergedSpec.config?.point?.strokeWidth ?? resolvedUiTheme.chartLinePointStrokeWidth,
+            shape: mergedSpec.config?.point?.shape ?? resolvedUiTheme.chartPointShape,
+            size: mergedSpec.config?.point?.size ?? resolvedUiTheme.chartPointSize,
+            opacity: mergedSpec.config?.point?.opacity ?? resolvedUiTheme.chartPointOpacity,
+          },
+          rule: {
+            ...(mergedSpec.config?.rule ?? {}),
+            color: mergedSpec.config?.rule?.color ?? resolvedUiTheme.referenceLineColor,
+            strokeWidth: mergedSpec.config?.rule?.strokeWidth ?? resolvedUiTheme.referenceLineWidth,
+            strokeDash: mergedSpec.config?.rule?.strokeDash ?? referenceDash,
+          },
+          style: {
+            ...(mergedSpec.config?.style ?? {}),
+            referenceLineLabel: {
+              ...((mergedSpec.config?.style as any)?.referenceLineLabel ?? {}),
+              fill:
+                ((mergedSpec.config?.style as any)?.referenceLineLabel?.fill as string | undefined) ??
+                resolvedUiTheme.referenceLineLabelColor,
+              fontSize:
+                ((mergedSpec.config?.style as any)?.referenceLineLabel?.fontSize as number | undefined) ??
+                resolvedUiTheme.referenceLineLabelFontSize,
+              font: ((mergedSpec.config?.style as any)?.referenceLineLabel?.font as string | undefined) ??
+                resolvedUiTheme.fontFamily,
+            },
           },
           title: {
             ...(mergedSpec.config?.title ?? {}),

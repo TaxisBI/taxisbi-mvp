@@ -17,6 +17,64 @@ function asDashStyle(value: unknown): 'solid' | 'dotted' | 'dashed' {
   return value === 'dotted' || value === 'dashed' ? value : 'solid';
 }
 
+function asLegendOrient(
+  value: unknown
+): 'left' | 'right' | 'top' | 'bottom' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' {
+  const allowed = new Set([
+    'left',
+    'right',
+    'top',
+    'bottom',
+    'top-left',
+    'top-right',
+    'bottom-left',
+    'bottom-right',
+  ]);
+  return typeof value === 'string' && allowed.has(value) ? (value as any) : 'right';
+}
+
+function asAxisOverlap(value: unknown): 'parity' | 'greedy' | 'none' {
+  return value === 'greedy' || value === 'none' ? value : 'parity';
+}
+
+function asPointShape(
+  value: unknown
+): 'circle' | 'square' | 'cross' | 'diamond' | 'triangle-up' | 'triangle-down' {
+  const allowed = new Set(['circle', 'square', 'cross', 'diamond', 'triangle-up', 'triangle-down']);
+  return typeof value === 'string' && allowed.has(value) ? (value as any) : 'circle';
+}
+
+function asLineInterpolate(
+  value: unknown
+): 'linear' | 'step' | 'step-after' | 'step-before' | 'basis' | 'cardinal' | 'monotone' {
+  const allowed = new Set([
+    'linear',
+    'step',
+    'step-after',
+    'step-before',
+    'basis',
+    'cardinal',
+    'monotone',
+  ]);
+  return typeof value === 'string' && allowed.has(value) ? (value as any) : 'linear';
+}
+
+function asToggleNumber(value: unknown, fallback: number): number {
+  if (typeof value === 'number') {
+    return value > 0 ? 1 : 0;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === '1' || normalized === 'true' || normalized === 'on') {
+      return 1;
+    }
+    if (normalized === '0' || normalized === 'false' || normalized === 'off') {
+      return 0;
+    }
+  }
+  return fallback > 0 ? 1 : 0;
+}
+
 function asOverlapPalette(value: unknown): Array<{ border: string; background: string }> {
   if (!Array.isArray(value)) {
     return [];
@@ -101,6 +159,35 @@ export function applyThemeToChart(theme: ThemeDefinition): ChartUiThemeContract 
     axisGridWidth: asNumber(ui.axisGridWidth, 1),
     axisTickWidth: asNumber(ui.axisTickWidth, 1),
     axisDomainWidth: asNumber(ui.axisDomainWidth, 1),
+    legendSymbolSize: asNumber(ui.legendSymbolSize, 140),
+    legendSymbolStrokeWidth: asNumber(ui.legendSymbolStrokeWidth, 1),
+    legendLabelLimit: asNumber(ui.legendLabelLimit, 220),
+    legendRowPadding: asNumber(ui.legendRowPadding, 4),
+    legendColumnPadding: asNumber(ui.legendColumnPadding, 12),
+    legendOrient: asLegendOrient(ui.legendOrient),
+    axisLabelAngle: asNumber(ui.axisLabelAngle, 0),
+    axisLabelLimit: asNumber(ui.axisLabelLimit, 180),
+    axisLabelPadding: asNumber(ui.axisLabelPadding, 6),
+    axisLabelOverlapStrategy: asAxisOverlap(ui.axisLabelOverlapStrategy),
+    axisNumberFormat: asString(ui.axisNumberFormat, ',.2f'),
+    axisDateFormat: asString(ui.axisDateFormat, '%Y-%m-%d'),
+    xAxisGridEnabled: asToggleNumber(ui.xAxisGridEnabled, 1),
+    yAxisGridEnabled: asToggleNumber(ui.yAxisGridEnabled, 1),
+    chartPointShape: asPointShape(ui.chartPointShape),
+    chartPointSize: asNumber(ui.chartPointSize, 70),
+    chartPointOpacity: asNumber(ui.chartPointOpacity, 1),
+    chartAreaOpacity: asNumber(ui.chartAreaOpacity, 0.2),
+    chartLineInterpolate: asLineInterpolate(ui.chartLineInterpolate),
+    referenceLineColor: asString(ui.referenceLineColor, '#64748b'),
+    referenceLineWidth: asNumber(ui.referenceLineWidth, 2),
+    referenceLineDashStyle: asDashStyle(ui.referenceLineDashStyle),
+    referenceLineLabelColor: asString(ui.referenceLineLabelColor, asString(ui.pageText, '#101828')),
+    referenceLineLabelFontSize: asNumber(ui.referenceLineLabelFontSize, 12),
+    chartSeriesSelectedColor: asString(ui.chartSeriesSelectedColor, asString(ui.chartBarHoverColor, '#22c55e')),
+    chartSeriesSelectedOpacity: asNumber(ui.chartSeriesSelectedOpacity, 1),
+    chartSeriesMutedColor: asString(ui.chartSeriesMutedColor, '#94a3b8'),
+    chartSeriesMutedOpacity: asNumber(ui.chartSeriesMutedOpacity, 0.45),
+    chartSeriesInactiveOpacity: asNumber(ui.chartSeriesInactiveOpacity, 0.2),
     overlapPalette:
       asOverlapPalette(ui.overlapPalette).length > 0
         ? asOverlapPalette(ui.overlapPalette)

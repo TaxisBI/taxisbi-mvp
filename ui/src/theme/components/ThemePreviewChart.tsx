@@ -268,6 +268,34 @@ export default function ThemePreviewChart({
   const axisGridWidth = Math.max(0, getUiNumber(editableThemeUi, 'axisGridWidth', 1));
   const axisTickWidth = Math.max(0, getUiNumber(editableThemeUi, 'axisTickWidth', 1));
   const axisDomainWidth = Math.max(0, getUiNumber(editableThemeUi, 'axisDomainWidth', 1));
+  const legendSymbolSize = Math.max(0, getUiNumber(editableThemeUi, 'legendSymbolSize', 140));
+  const legendSymbolStrokeWidth = Math.max(0, getUiNumber(editableThemeUi, 'legendSymbolStrokeWidth', 1));
+  const legendLabelLimit = Math.max(20, getUiNumber(editableThemeUi, 'legendLabelLimit', 220));
+  const legendRowPadding = Math.max(0, getUiNumber(editableThemeUi, 'legendRowPadding', 4));
+  const legendColumnPadding = Math.max(0, getUiNumber(editableThemeUi, 'legendColumnPadding', 12));
+  const legendOrient = getUiString(editableThemeUi, 'legendOrient', 'right');
+  const axisLabelAngle = getUiNumber(editableThemeUi, 'axisLabelAngle', 0);
+  const axisLabelLimit = Math.max(20, getUiNumber(editableThemeUi, 'axisLabelLimit', 180));
+  const axisLabelPadding = Math.max(0, getUiNumber(editableThemeUi, 'axisLabelPadding', 6));
+  const axisLabelOverlapStrategy = getUiString(editableThemeUi, 'axisLabelOverlapStrategy', 'parity');
+  const axisNumberFormat = getUiString(editableThemeUi, 'axisNumberFormat', ',.2f');
+  const xAxisGridEnabled = getUiNumber(editableThemeUi, 'xAxisGridEnabled', 1) > 0;
+  const yAxisGridEnabled = getUiNumber(editableThemeUi, 'yAxisGridEnabled', 1) > 0;
+  const chartPointShape = getUiString(editableThemeUi, 'chartPointShape', 'circle');
+  const chartPointSize = Math.max(0, getUiNumber(editableThemeUi, 'chartPointSize', 70));
+  const chartPointOpacity = clamp01(getUiNumber(editableThemeUi, 'chartPointOpacity', 1));
+  const chartAreaOpacity = clamp01(getUiNumber(editableThemeUi, 'chartAreaOpacity', 0.2));
+  const chartLineInterpolate = getUiString(editableThemeUi, 'chartLineInterpolate', 'linear');
+  const referenceLineColor = getUiColor(editableThemeUi, 'referenceLineColor', hoverColor);
+  const referenceLineWidth = Math.max(0, getUiNumber(editableThemeUi, 'referenceLineWidth', 2));
+  const referenceLineDash = toDashArray(getUiDashStyle(editableThemeUi, 'referenceLineDashStyle', 'dashed'));
+  const referenceLineLabelColor = getUiColor(editableThemeUi, 'referenceLineLabelColor', pageText);
+  const referenceLineLabelFontSize = Math.max(8, getUiNumber(editableThemeUi, 'referenceLineLabelFontSize', 12));
+  const chartSeriesSelectedColor = getUiColor(editableThemeUi, 'chartSeriesSelectedColor', barHoverColor);
+  const chartSeriesSelectedOpacity = clamp01(getUiNumber(editableThemeUi, 'chartSeriesSelectedOpacity', 1));
+  const chartSeriesMutedColor = getUiColor(editableThemeUi, 'chartSeriesMutedColor', '#94a3b8');
+  const chartSeriesMutedOpacity = clamp01(getUiNumber(editableThemeUi, 'chartSeriesMutedOpacity', 0.45));
+  const chartSeriesInactiveOpacity = clamp01(getUiNumber(editableThemeUi, 'chartSeriesInactiveOpacity', 0.2));
 
   const spec = {
     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
@@ -315,6 +343,14 @@ export default function ThemePreviewChart({
               clear: 'mouseout',
             },
           },
+          {
+            name: 'barSelectPreview',
+            select: {
+              type: 'point',
+              fields: ['month', 'segment'],
+              on: 'click',
+            },
+          },
         ],
         mark: {
           type: 'bar',
@@ -326,23 +362,45 @@ export default function ThemePreviewChart({
           xOffset: { field: 'segment' },
           y: { field: 'value', type: 'quantitative', title: 'Value' },
           color: {
-            condition: {
-              param: 'barHoverPreview',
-              empty: false,
-              value: barHoverColor,
-            },
+            condition: [
+              {
+                param: 'barHoverPreview',
+                empty: false,
+                value: barHoverColor,
+              },
+              {
+                param: 'barSelectPreview',
+                empty: false,
+                value: chartSeriesSelectedColor,
+              },
+              {
+                test: 'length(data("barSelectPreview_store")) > 0',
+                value: chartSeriesMutedColor,
+              },
+            ],
             field: 'segment',
             type: 'nominal',
             scale: { domain: ['Actual', 'Prior'], range: [barDefaultColor, categoricalB] },
             legend: { title: 'Series' },
           },
           opacity: {
-            condition: {
-              param: 'barHoverPreview',
-              empty: false,
-              value: barHoverOpacity,
-            },
-            value: barDefaultOpacity,
+            condition: [
+              {
+                param: 'barHoverPreview',
+                empty: false,
+                value: barHoverOpacity,
+              },
+              {
+                param: 'barSelectPreview',
+                empty: false,
+                value: chartSeriesSelectedOpacity,
+              },
+              {
+                test: 'length(data("barSelectPreview_store")) > 0',
+                value: chartSeriesMutedOpacity,
+              },
+            ],
+            value: chartSeriesInactiveOpacity || barDefaultOpacity,
           },
           stroke: {
             condition: {
@@ -378,12 +436,25 @@ export default function ThemePreviewChart({
       },
       {
         mark: {
+          type: 'area',
+          interpolate: chartLineInterpolate,
+          color: chartLineFillColor,
+          opacity: chartAreaOpacity,
+        },
+        encoding: {
+          x: { field: 'month', type: 'ordinal' },
+          y: { field: 'target', type: 'quantitative' },
+        },
+      },
+      {
+        mark: {
           type: 'line',
           point: false,
           strokeDash: [6, 4],
           stroke: chartLineStrokeColor,
           fill: chartLineFillColor,
           strokeWidth: chartLineStrokeWidth,
+          interpolate: chartLineInterpolate,
         },
         encoding: {
           x: { field: 'month', type: 'ordinal' },
@@ -394,11 +465,13 @@ export default function ThemePreviewChart({
       {
         mark: {
           type: 'point',
-          size: 70,
+          size: chartPointSize,
           filled: true,
           fill: chartLinePointFillColor,
           stroke: chartLinePointStrokeColor,
           strokeWidth: chartLinePointStrokeWidth,
+          shape: chartPointShape,
+          opacity: chartPointOpacity,
         },
         encoding: {
           x: { field: 'month', type: 'ordinal' },
@@ -427,10 +500,33 @@ export default function ThemePreviewChart({
         },
       },
       {
-        mark: { type: 'rule', strokeDash: [8, 5], strokeWidth: 2 },
+        mark: {
+          type: 'rule',
+          strokeDash: referenceLineDash,
+          strokeWidth: referenceLineWidth,
+          color: referenceLineColor,
+        },
         encoding: {
           y: { datum: 175 },
-          color: { value: hoverColor },
+          color: { value: referenceLineColor },
+        },
+      },
+      {
+        mark: {
+          type: 'text',
+          align: 'left',
+          dx: 8,
+          dy: -6,
+          fill: referenceLineLabelColor,
+          fontSize: referenceLineLabelFontSize,
+          font: sharedTypography.fontFamily,
+          fontWeight: '600',
+          style: 'referenceLineLabel',
+        },
+        encoding: {
+          x: { datum: 'Jan' },
+          y: { datum: 175 },
+          text: { value: 'Target Threshold' },
         },
       },
     ],
@@ -463,12 +559,23 @@ export default function ThemePreviewChart({
         domainColor: axisGrid,
         tickColor: axisGrid,
         tickCount: axisTickCount,
+        labelAngle: axisLabelAngle,
+        labelLimit: axisLabelLimit,
+        labelPadding: axisLabelPadding,
+        labelOverlap: axisLabelOverlapStrategy,
+        format: axisNumberFormat,
         gridDash: axisGridDash,
         tickDash: axisTickDash,
         domainDash: axisDomainDash,
         gridWidth: axisGridWidth,
         tickWidth: axisTickWidth,
         domainWidth: axisDomainWidth,
+      },
+      axisX: {
+        grid: xAxisGridEnabled,
+      },
+      axisY: {
+        grid: yAxisGridEnabled,
       },
       title: {
         color: titleTypography.fontColor,
@@ -488,6 +595,12 @@ export default function ThemePreviewChart({
         titleFontStyle: legendTypography.fontStyle,
         labelFontWeight: legendTypography.fontWeight,
         titleFontWeight: legendTypography.fontWeight,
+        symbolSize: legendSymbolSize,
+        symbolStrokeWidth: legendSymbolStrokeWidth,
+        labelLimit: legendLabelLimit,
+        rowPadding: legendRowPadding,
+        columnPadding: legendColumnPadding,
+        orient: legendOrient,
       },
       style: {
         'guide-label': {
@@ -501,6 +614,12 @@ export default function ThemePreviewChart({
           font: axisTypography.fontFamily,
           fontStyle: axisTypography.fontStyle,
           fontWeight: axisTypography.fontWeight,
+        },
+        referenceLineLabel: {
+          fill: referenceLineLabelColor,
+          font: sharedTypography.fontFamily,
+          fontSize: referenceLineLabelFontSize,
+          fontWeight: '600',
         },
       },
     },

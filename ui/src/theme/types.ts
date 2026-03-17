@@ -138,6 +138,42 @@ export type ChartUiThemeContract = {
   axisGridWidth: number;
   axisTickWidth: number;
   axisDomainWidth: number;
+  legendSymbolSize: number;
+  legendSymbolStrokeWidth: number;
+  legendLabelLimit: number;
+  legendRowPadding: number;
+  legendColumnPadding: number;
+  legendOrient: 'left' | 'right' | 'top' | 'bottom' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  axisLabelAngle: number;
+  axisLabelLimit: number;
+  axisLabelPadding: number;
+  axisLabelOverlapStrategy: 'parity' | 'greedy' | 'none';
+  axisNumberFormat: string;
+  axisDateFormat: string;
+  xAxisGridEnabled: number;
+  yAxisGridEnabled: number;
+  chartPointShape: 'circle' | 'square' | 'cross' | 'diamond' | 'triangle-up' | 'triangle-down';
+  chartPointSize: number;
+  chartPointOpacity: number;
+  chartAreaOpacity: number;
+  chartLineInterpolate:
+    | 'linear'
+    | 'step'
+    | 'step-after'
+    | 'step-before'
+    | 'basis'
+    | 'cardinal'
+    | 'monotone';
+  referenceLineColor: string;
+  referenceLineWidth: number;
+  referenceLineDashStyle: 'solid' | 'dotted' | 'dashed';
+  referenceLineLabelColor: string;
+  referenceLineLabelFontSize: number;
+  chartSeriesSelectedColor: string;
+  chartSeriesSelectedOpacity: number;
+  chartSeriesMutedColor: string;
+  chartSeriesMutedOpacity: number;
+  chartSeriesInactiveOpacity: number;
   overlapPalette: Array<{ border: string; background: string }>;
   tooltipTheme: 'light' | 'dark';
   tooltipStyle: TooltipStyleContract;

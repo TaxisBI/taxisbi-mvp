@@ -3,8 +3,6 @@ import { ColorStudioToken, StyleStudioToken, ThemeSaveDraft, ThemeBuilderUiTheme
 import { hexToRgb, normalizeHexColor, rgbToHex } from '../utils';
 import ThemePreviewChart from './ThemePreviewChart';
 
-const FOLDER_STATE_STORAGE_KEY = 'taxisbi.themeBuilder.expandedFolders';
-
 const FONT_FAMILY_OPTIONS = [
   { value: 'Helvetica, Arial, sans-serif', label: 'Helvetica (Default)' },
   { value: 'Arial, sans-serif', label: 'Arial' },
@@ -64,6 +62,214 @@ const TOOLTIP_SURFACE_SUFFIXES = [
   'BorderWidth',
   'Padding',
 ] as const;
+
+const STYLE_ENUM_OPTIONS: Record<string, Array<{ value: string; label: string }>> = {
+  legendOrient: [
+    { value: 'left', label: 'Left' },
+    { value: 'right', label: 'Right' },
+    { value: 'top', label: 'Top' },
+    { value: 'bottom', label: 'Bottom' },
+    { value: 'top-left', label: 'Top Left' },
+    { value: 'top-right', label: 'Top Right' },
+    { value: 'bottom-left', label: 'Bottom Left' },
+    { value: 'bottom-right', label: 'Bottom Right' },
+  ],
+  axisLabelOverlapStrategy: [
+    { value: 'parity', label: 'Parity' },
+    { value: 'greedy', label: 'Greedy' },
+    { value: 'none', label: 'None' },
+  ],
+  axisGridDashStyle: [
+    { value: 'solid', label: 'Solid' },
+    { value: 'dotted', label: 'Dotted' },
+    { value: 'dashed', label: 'Dashed' },
+  ],
+  axisDomainDashStyle: [
+    { value: 'solid', label: 'Solid' },
+    { value: 'dotted', label: 'Dotted' },
+    { value: 'dashed', label: 'Dashed' },
+  ],
+  axisTickDashStyle: [
+    { value: 'solid', label: 'Solid' },
+    { value: 'dotted', label: 'Dotted' },
+    { value: 'dashed', label: 'Dashed' },
+  ],
+  referenceLineDashStyle: [
+    { value: 'solid', label: 'Solid' },
+    { value: 'dotted', label: 'Dotted' },
+    { value: 'dashed', label: 'Dashed' },
+  ],
+  chartLineInterpolate: [
+    { value: 'linear', label: 'Linear' },
+    { value: 'step', label: 'Step' },
+    { value: 'step-after', label: 'Step After' },
+    { value: 'step-before', label: 'Step Before' },
+    { value: 'basis', label: 'Basis' },
+    { value: 'cardinal', label: 'Cardinal' },
+    { value: 'monotone', label: 'Monotone' },
+  ],
+  chartPointShape: [
+    { value: 'circle', label: 'Circle' },
+    { value: 'square', label: 'Square' },
+    { value: 'cross', label: 'Cross' },
+    { value: 'diamond', label: 'Diamond' },
+    { value: 'triangle-up', label: 'Triangle Up' },
+    { value: 'triangle-down', label: 'Triangle Down' },
+  ],
+};
+
+const STYLE_TOGGLE_KEYS = new Set(['xAxisGridEnabled', 'yAxisGridEnabled']);
+
+type ChartControlField =
+  | {
+      key: string;
+      label: string;
+      type: 'number';
+      min?: number;
+      max?: number;
+      step?: number;
+    }
+  | {
+      key: string;
+      label: string;
+      type: 'color';
+    }
+  | {
+      key: string;
+      label: string;
+      type: 'select';
+      options: Array<{ value: string; label: string }>;
+    }
+  | {
+      key: string;
+      label: string;
+      type: 'toggle';
+    };
+
+const CHART_CONTROL_GROUPS: Array<{
+  key: string;
+  label: string;
+  description: string;
+  fields: ChartControlField[];
+}> = [
+  {
+    key: 'legend',
+    label: 'Legend',
+    description: 'Legend symbol size, spacing, and orientation.',
+    fields: [
+      { key: 'legendSymbolSize', label: 'Symbol Size', type: 'number', min: 0, step: 1 },
+      { key: 'legendSymbolStrokeWidth', label: 'Symbol Stroke Width', type: 'number', min: 0, step: 0.5 },
+      { key: 'legendLabelLimit', label: 'Label Limit', type: 'number', min: 0, step: 1 },
+      { key: 'legendRowPadding', label: 'Row Padding', type: 'number', min: 0, step: 1 },
+      { key: 'legendColumnPadding', label: 'Column Padding', type: 'number', min: 0, step: 1 },
+      {
+        key: 'legendOrient',
+        label: 'Orientation',
+        type: 'select',
+        options: STYLE_ENUM_OPTIONS.legendOrient,
+      },
+    ],
+  },
+  {
+    key: 'axis',
+    label: 'Axis & Grid',
+    description: 'Tick interval, label layout, and per-axis grid visibility.',
+    fields: [
+      { key: 'axisTickCount', label: 'Tick Count', type: 'number', min: 1, step: 1 },
+      { key: 'axisLabelAngle', label: 'Label Angle', type: 'number', min: -180, max: 180, step: 1 },
+      { key: 'axisLabelLimit', label: 'Label Limit', type: 'number', min: 0, step: 1 },
+      { key: 'axisLabelPadding', label: 'Label Padding', type: 'number', min: 0, step: 1 },
+      {
+        key: 'axisLabelOverlapStrategy',
+        label: 'Overlap Strategy',
+        type: 'select',
+        options: STYLE_ENUM_OPTIONS.axisLabelOverlapStrategy,
+      },
+      { key: 'axisNumberFormat', label: 'Number Format', type: 'select', options: [{ value: ',.2f', label: 'Default (,.2f)' }, { value: ',.0f', label: 'Integer (,.0f)' }, { value: '$,.2f', label: 'Currency ($,.2f)' }] },
+      { key: 'axisDateFormat', label: 'Date Format', type: 'select', options: [{ value: '%Y-%m-%d', label: 'YYYY-MM-DD' }, { value: '%b %d, %Y', label: 'Mon DD, YYYY' }, { value: '%m/%d/%Y', label: 'MM/DD/YYYY' }] },
+      { key: 'xAxisGridEnabled', label: 'X Axis Grid', type: 'toggle' },
+      { key: 'yAxisGridEnabled', label: 'Y Axis Grid', type: 'toggle' },
+      { key: 'axisGridWidth', label: 'Grid Width', type: 'number', min: 0, step: 0.5 },
+      { key: 'axisTickWidth', label: 'Tick Width', type: 'number', min: 0, step: 0.5 },
+      { key: 'axisDomainWidth', label: 'Domain Width', type: 'number', min: 0, step: 0.5 },
+      {
+        key: 'axisGridDashStyle',
+        label: 'Grid Dash Style',
+        type: 'select',
+        options: STYLE_ENUM_OPTIONS.axisGridDashStyle,
+      },
+      {
+        key: 'axisTickDashStyle',
+        label: 'Tick Dash Style',
+        type: 'select',
+        options: STYLE_ENUM_OPTIONS.axisTickDashStyle,
+      },
+      {
+        key: 'axisDomainDashStyle',
+        label: 'Domain Dash Style',
+        type: 'select',
+        options: STYLE_ENUM_OPTIONS.axisDomainDashStyle,
+      },
+    ],
+  },
+  {
+    key: 'series',
+    label: 'Line/Point/Area',
+    description: 'Series shape and interpolation settings.',
+    fields: [
+      { key: 'chartLineStrokeColor', label: 'Line Stroke', type: 'color' },
+      { key: 'chartLineFillColor', label: 'Line Fill', type: 'color' },
+      { key: 'chartLineStrokeWidth', label: 'Line Width', type: 'number', min: 0, step: 0.5 },
+      { key: 'chartAreaOpacity', label: 'Area Opacity', type: 'number', min: 0, max: 1, step: 0.05 },
+      {
+        key: 'chartLineInterpolate',
+        label: 'Interpolation',
+        type: 'select',
+        options: STYLE_ENUM_OPTIONS.chartLineInterpolate,
+      },
+      { key: 'chartLinePointFillColor', label: 'Point Fill', type: 'color' },
+      { key: 'chartLinePointStrokeColor', label: 'Point Stroke', type: 'color' },
+      { key: 'chartLinePointStrokeWidth', label: 'Point Stroke Width', type: 'number', min: 0, step: 0.5 },
+      { key: 'chartPointSize', label: 'Point Size', type: 'number', min: 0, step: 1 },
+      { key: 'chartPointOpacity', label: 'Point Opacity', type: 'number', min: 0, max: 1, step: 0.05 },
+      {
+        key: 'chartPointShape',
+        label: 'Point Shape',
+        type: 'select',
+        options: STYLE_ENUM_OPTIONS.chartPointShape,
+      },
+    ],
+  },
+  {
+    key: 'reference',
+    label: 'Reference Line',
+    description: 'Threshold/reference line appearance.',
+    fields: [
+      { key: 'referenceLineColor', label: 'Line Color', type: 'color' },
+      { key: 'referenceLineWidth', label: 'Line Width', type: 'number', min: 0, step: 0.5 },
+      {
+        key: 'referenceLineDashStyle',
+        label: 'Dash Style',
+        type: 'select',
+        options: STYLE_ENUM_OPTIONS.referenceLineDashStyle,
+      },
+      { key: 'referenceLineLabelColor', label: 'Label Color', type: 'color' },
+      { key: 'referenceLineLabelFontSize', label: 'Label Font Size', type: 'number', min: 1, step: 1 },
+    ],
+  },
+  {
+    key: 'interaction',
+    label: 'Interaction States',
+    description: 'Selected, muted, and inactive series state styling.',
+    fields: [
+      { key: 'chartSeriesSelectedColor', label: 'Selected Color', type: 'color' },
+      { key: 'chartSeriesSelectedOpacity', label: 'Selected Opacity', type: 'number', min: 0, max: 1, step: 0.05 },
+      { key: 'chartSeriesMutedColor', label: 'Muted Color', type: 'color' },
+      { key: 'chartSeriesMutedOpacity', label: 'Muted Opacity', type: 'number', min: 0, max: 1, step: 0.05 },
+      { key: 'chartSeriesInactiveOpacity', label: 'Inactive Opacity', type: 'number', min: 0, max: 1, step: 0.05 },
+    ],
+  },
+];
 
 type TypographySettings = {
   fontFamily: string;
@@ -241,43 +447,26 @@ export default function ThemeBuilderWorkspace({
   const [editorTokenPath, setEditorTokenPath] = useState<string | null>(null);
   const [editorHexDraft, setEditorHexDraft] = useState('#000000');
   const [editorRgbDraft, setEditorRgbDraft] = useState({ r: '0', g: '0', b: '0' });
-  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>(() => {
-    if (typeof window === 'undefined') {
-      return {};
-    }
-
-    try {
-      const raw = window.localStorage.getItem(FOLDER_STATE_STORAGE_KEY);
-      if (!raw) {
-        return {};
-      }
-
-      const parsed = JSON.parse(raw) as unknown;
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        return {};
-      }
-
-      return Object.fromEntries(
-        Object.entries(parsed as Record<string, unknown>).filter(
-          (entry): entry is [string, boolean] => typeof entry[1] === 'boolean'
-        )
-      );
-    } catch {
-      return {};
-    }
-  });
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
   const [themeType, setThemeType] = useState<'all' | 'monocolor' | 'adjacent' | 'diverging'>('all');
-  const [themeTone, setThemeTone] = useState<'light' | 'dark'>('light');
-  const [isThemeElementsExpanded, setIsThemeElementsExpanded] = useState(true);
-  const [isWidthsSectionExpanded, setIsWidthsSectionExpanded] = useState(true);
-  const [isTypographySectionExpanded, setIsTypographySectionExpanded] = useState(true);
-  const [isColorsSectionExpanded, setIsColorsSectionExpanded] = useState(true);
+  const [themeTone, setThemeTone] = useState<'all' | 'light' | 'dark'>('all');
+  const [isThemeElementsExpanded, setIsThemeElementsExpanded] = useState(false);
+  const [isWidthsSectionExpanded, setIsWidthsSectionExpanded] = useState(false);
+  const [isTypographySectionExpanded, setIsTypographySectionExpanded] = useState(false);
+  const [isColorsSectionExpanded, setIsColorsSectionExpanded] = useState(false);
   const [expandedTypographyOverrides, setExpandedTypographyOverrides] = useState<Record<string, boolean>>({
     title: false,
     legend: false,
     axis: false,
     barLabel: false,
     tooltip: false,
+  });
+  const [expandedChartControlGroups, setExpandedChartControlGroups] = useState<Record<string, boolean>>({
+    legend: false,
+    axis: false,
+    series: false,
+    reference: false,
+    interaction: false,
   });
   const [styleDraftByToken, setStyleDraftByToken] = useState<Record<string, string>>({});
 
@@ -308,13 +497,15 @@ export default function ThemeBuilderWorkspace({
         return false;
       }
 
-      const hasLightWord = /\blight\b/.test(haystack);
-      const hasDarkWord = /\bdark\b/.test(haystack);
-      if (themeTone === 'light' && hasDarkWord && !hasLightWord) {
-        return false;
-      }
-      if (themeTone === 'dark' && hasLightWord && !hasDarkWord) {
-        return false;
+      if (themeTone !== 'all') {
+        const hasLightWord = /\blight\b/.test(haystack);
+        const hasDarkWord = /\bdark\b/.test(haystack);
+        if (themeTone === 'light' && hasDarkWord && !hasLightWord) {
+          return false;
+        }
+        if (themeTone === 'dark' && hasLightWord && !hasDarkWord) {
+          return false;
+        }
       }
 
       return true;
@@ -434,18 +625,6 @@ export default function ThemeBuilderWorkspace({
       return next;
     });
   }, [styleStudioTokens]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    try {
-      window.localStorage.setItem(FOLDER_STATE_STORAGE_KEY, JSON.stringify(expandedFolders));
-    } catch {
-      // Ignore storage failures (privacy mode/quota) and keep runtime behavior.
-    }
-  }, [expandedFolders]);
 
   useEffect(() => {
     if (filteredTokens.length === 0) {
@@ -896,6 +1075,236 @@ export default function ThemeBuilderWorkspace({
     );
   };
 
+  const renderStyleTokenControl = (token: StyleStudioToken) => {
+    const fieldStyle = {
+      display: 'grid',
+      gap: 6,
+      fontSize: 12,
+      fontWeight: 600,
+    } as const;
+    const inputStyle = {
+      border: '1px solid',
+      borderColor: uiTheme.buttonBorder,
+      borderRadius: 6,
+      padding: '6px 8px',
+      background: uiTheme.buttonBackground,
+      color: uiTheme.buttonText,
+      fontSize: 12,
+    } as const;
+
+    const draftValue = styleDraftByToken[token.pathText] ?? String(token.value);
+    const enumOptions = STYLE_ENUM_OPTIONS[token.pathText];
+
+    if (enumOptions) {
+      const safeValue = enumOptions.some((option) => option.value === draftValue)
+        ? draftValue
+        : enumOptions[0].value;
+
+      return (
+        <label
+          key={token.pathText}
+          style={fieldStyle}
+        >
+          <span>{token.label}</span>
+          <select
+            value={safeValue}
+            onChange={(event) => {
+              const next = event.target.value;
+              setStyleDraftByToken((current) => ({
+                ...current,
+                [token.pathText]: next,
+              }));
+              onApplyStyleValueForToken(token.pathText, next);
+            }}
+            style={inputStyle}
+          >
+            {enumOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      );
+    }
+
+    if (STYLE_TOGGLE_KEYS.has(token.pathText)) {
+      const checked = draftValue === '1' || draftValue.toLowerCase() === 'true';
+
+      return (
+        <label
+          key={token.pathText}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 10,
+            fontSize: 12,
+            fontWeight: 600,
+            border: '1px solid',
+            borderColor: uiTheme.buttonBorder,
+            borderRadius: 6,
+            padding: '8px 10px',
+            background: uiTheme.buttonBackground,
+          }}
+        >
+          <span>{token.label}</span>
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={(event) => {
+              const next = event.target.checked ? '1' : '0';
+              setStyleDraftByToken((current) => ({
+                ...current,
+                [token.pathText]: next,
+              }));
+              onApplyStyleValueForToken(token.pathText, next);
+            }}
+          />
+        </label>
+      );
+    }
+
+    return (
+      <label
+        key={token.pathText}
+        style={fieldStyle}
+      >
+        <span>{token.label}</span>
+        <input
+          type={token.valueType === 'number' ? 'number' : 'text'}
+          step={token.valueType === 'number' ? '0.1' : undefined}
+          value={draftValue}
+          onChange={(event) =>
+            setStyleDraftByToken((current) => ({
+              ...current,
+              [token.pathText]: event.target.value,
+            }))
+          }
+          onBlur={() =>
+            onApplyStyleValueForToken(
+              token.pathText,
+              styleDraftByToken[token.pathText] ?? String(token.value)
+            )
+          }
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.currentTarget.blur();
+            }
+          }}
+          style={inputStyle}
+        />
+      </label>
+    );
+  };
+
+  const getSettingNumber = (key: string, fallback = 0) =>
+    getUiNumberValue(editableThemeUi, key, fallback);
+  const getSettingString = (key: string, fallback = '') =>
+    getUiStringValue(editableThemeUi, key, fallback);
+  const getSettingColor = (key: string, fallback = '#000000') =>
+    getUiColorValue(editableThemeUi, key, fallback);
+
+  const renderChartControlField = (field: ChartControlField) => {
+    const commonInputStyle = {
+      border: '1px solid',
+      borderColor: uiTheme.buttonBorder,
+      borderRadius: 6,
+      padding: '6px 8px',
+      background: uiTheme.buttonBackground,
+      color: uiTheme.buttonText,
+      fontSize: 12,
+      width: '100%',
+      boxSizing: 'border-box',
+    } as const;
+
+    if (field.type === 'number') {
+      return (
+        <label key={field.key} style={{ display: 'grid', gap: 6, fontSize: 12, fontWeight: 600 }}>
+          <span>{field.label}</span>
+          <input
+            type="number"
+            min={field.min}
+            max={field.max}
+            step={field.step ?? 1}
+            value={getSettingNumber(field.key, 0)}
+            onChange={(event) =>
+              onApplyUiSetting(field.key, Number.parseFloat(event.target.value) || 0)
+            }
+            style={commonInputStyle}
+          />
+        </label>
+      );
+    }
+
+    if (field.type === 'color') {
+      return (
+        <label key={field.key} style={{ display: 'grid', gap: 6, fontSize: 12, fontWeight: 600 }}>
+          <span>{field.label}</span>
+          <input
+            type="color"
+            value={getSettingColor(field.key, '#000000')}
+            onChange={(event) => onApplyUiSetting(field.key, event.target.value)}
+            style={{
+              border: '1px solid',
+              borderColor: uiTheme.buttonBorder,
+              borderRadius: 6,
+              padding: '2px',
+              background: uiTheme.buttonBackground,
+              height: 34,
+              width: 48,
+            }}
+          />
+        </label>
+      );
+    }
+
+    if (field.type === 'toggle') {
+      return (
+        <label
+          key={field.key}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 10,
+            fontSize: 12,
+            fontWeight: 600,
+            border: '1px solid',
+            borderColor: uiTheme.buttonBorder,
+            borderRadius: 6,
+            padding: '8px 10px',
+            background: uiTheme.buttonBackground,
+          }}
+        >
+          <span>{field.label}</span>
+          <input
+            type="checkbox"
+            checked={getSettingNumber(field.key, 0) > 0}
+            onChange={(event) => onApplyUiSetting(field.key, event.target.checked ? 1 : 0)}
+          />
+        </label>
+      );
+    }
+
+    return (
+      <label key={field.key} style={{ display: 'grid', gap: 6, fontSize: 12, fontWeight: 600 }}>
+        <span>{field.label}</span>
+        <select
+          value={getSettingString(field.key, field.options[0]?.value ?? '')}
+          onChange={(event) => onApplyUiSetting(field.key, event.target.value)}
+          style={commonInputStyle}
+        >
+          {field.options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  };
+
   return (
     <div
       role="region"
@@ -953,7 +1362,7 @@ export default function ThemeBuilderWorkspace({
         .theme-builder-folder {
           border: 1px solid;
           border-radius: 8px;
-          overflow: clip;
+          overflow: hidden;
         }
 
         .theme-builder-folder-header {
@@ -1140,6 +1549,7 @@ export default function ThemeBuilderWorkspace({
                 fontWeight: 600,
               }}
             >
+              <option value="all">All</option>
               <option value="light">Light</option>
               <option value="dark">Dark</option>
             </select>
@@ -1259,6 +1669,59 @@ export default function ThemeBuilderWorkspace({
                       })}
 
                       <div style={{ display: 'grid', gap: 8 }}>
+                        <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedTypographyOverrides({
+                                title: true,
+                                legend: true,
+                                axis: true,
+                                barLabel: true,
+                                tooltip: true,
+                              })
+                            }
+                            style={{
+                              border: '1px solid',
+                              borderColor: uiTheme.buttonBorder,
+                              borderRadius: 6,
+                              padding: '4px 8px',
+                              background: uiTheme.buttonBackground,
+                              color: uiTheme.buttonText,
+                              cursor: 'pointer',
+                              fontSize: 11,
+                              fontWeight: 600,
+                            }}
+                          >
+                            Expand all typography groups
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedTypographyOverrides({
+                                title: false,
+                                legend: false,
+                                axis: false,
+                                barLabel: false,
+                                tooltip: false,
+                              })
+                            }
+                            style={{
+                              border: '1px solid',
+                              borderColor: uiTheme.buttonBorder,
+                              borderRadius: 6,
+                              padding: '4px 8px',
+                              background: uiTheme.buttonBackground,
+                              color: uiTheme.buttonText,
+                              cursor: 'pointer',
+                              fontSize: 11,
+                              fontWeight: 600,
+                            }}
+                          >
+                            Collapse all typography groups
+                          </button>
+                        </div>
+
                         {TYPOGRAPHY_OVERRIDE_SECTIONS.map((section) => {
                           const isExpanded = expandedTypographyOverrides[section.key] ?? false;
                           const isCustomized = hasTypographyOverride(section.key);
@@ -1374,53 +1837,147 @@ export default function ThemeBuilderWorkspace({
                             Additional typography tokens ({additionalTypographyStyleTokens.length})
                           </summary>
                           <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
-                            {additionalTypographyStyleTokens.map((token) => (
-                              <label
-                                key={token.pathText}
-                                style={{
-                                  display: 'grid',
-                                  gap: 6,
-                                  fontSize: 12,
-                                  fontWeight: 600,
-                                }}
-                              >
-                                <span>{token.label}</span>
-                                <input
-                                  type={token.valueType === 'number' ? 'number' : 'text'}
-                                  step={token.valueType === 'number' ? '0.1' : undefined}
-                                  value={styleDraftByToken[token.pathText] ?? String(token.value)}
-                                  onChange={(event) =>
-                                    setStyleDraftByToken((current) => ({
-                                      ...current,
-                                      [token.pathText]: event.target.value,
-                                    }))
-                                  }
-                                  onBlur={() =>
-                                    onApplyStyleValueForToken(
-                                      token.pathText,
-                                      styleDraftByToken[token.pathText] ?? String(token.value)
-                                    )
-                                  }
-                                  onKeyDown={(event) => {
-                                    if (event.key === 'Enter') {
-                                      event.currentTarget.blur();
-                                    }
-                                  }}
-                                  style={{
-                                    border: '1px solid',
-                                    borderColor: uiTheme.buttonBorder,
-                                    borderRadius: 6,
-                                    padding: '6px 8px',
-                                    background: uiTheme.buttonBackground,
-                                    color: uiTheme.buttonText,
-                                    fontSize: 12,
-                                  }}
-                                />
-                              </label>
-                            ))}
+                            {additionalTypographyStyleTokens.map((token) => renderStyleTokenControl(token))}
                           </div>
                         </details>
                       ) : null}
+                    </div>
+                  </div>
+
+                  <div
+                    className="theme-builder-folder"
+                    style={{ borderColor: uiTheme.buttonBorder }}
+                  >
+                    <button
+                      type="button"
+                      className="theme-builder-folder-header"
+                      onClick={() =>
+                        setExpandedChartControlGroups((current) => {
+                          const nextExpanded = !Object.values(current).some(Boolean);
+                          const next: Record<string, boolean> = {};
+                          CHART_CONTROL_GROUPS.forEach((group) => {
+                            next[group.key] = nextExpanded;
+                          });
+                          return next;
+                        })
+                      }
+                      aria-expanded={Object.values(expandedChartControlGroups).some(Boolean)}
+                      style={{ background: uiTheme.buttonBackground, color: uiTheme.buttonText }}
+                    >
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
+                          {Object.values(expandedChartControlGroups).some(Boolean) ? '▾' : '▸'}
+                        </span>
+                        <span>Chart Controls</span>
+                      </span>
+                      <span style={{ opacity: 0.7 }}>{CHART_CONTROL_GROUPS.length}</span>
+                    </button>
+                    <div
+                      className="theme-builder-folder-body"
+                      style={{
+                        borderColor: uiTheme.buttonBorder,
+                        display: Object.values(expandedChartControlGroups).some(Boolean) ? 'grid' : 'none',
+                      }}
+                    >
+                      <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedChartControlGroups({
+                              legend: true,
+                              axis: true,
+                              series: true,
+                              reference: true,
+                              interaction: true,
+                            })
+                          }
+                          style={{
+                            border: '1px solid',
+                            borderColor: uiTheme.buttonBorder,
+                            borderRadius: 6,
+                            padding: '4px 8px',
+                            background: uiTheme.buttonBackground,
+                            color: uiTheme.buttonText,
+                            cursor: 'pointer',
+                            fontSize: 11,
+                            fontWeight: 600,
+                          }}
+                        >
+                          Expand all chart groups
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedChartControlGroups({
+                              legend: false,
+                              axis: false,
+                              series: false,
+                              reference: false,
+                              interaction: false,
+                            })
+                          }
+                          style={{
+                            border: '1px solid',
+                            borderColor: uiTheme.buttonBorder,
+                            borderRadius: 6,
+                            padding: '4px 8px',
+                            background: uiTheme.buttonBackground,
+                            color: uiTheme.buttonText,
+                            cursor: 'pointer',
+                            fontSize: 11,
+                            fontWeight: 600,
+                          }}
+                        >
+                          Collapse all chart groups
+                        </button>
+                      </div>
+
+                      {CHART_CONTROL_GROUPS.map((group) => {
+                        const isExpanded = expandedChartControlGroups[group.key] ?? false;
+                        return (
+                          <div key={group.key} className="theme-builder-folder" style={{ borderColor: uiTheme.buttonBorder }}>
+                            <button
+                              type="button"
+                              className="theme-builder-folder-header"
+                              onClick={() =>
+                                setExpandedChartControlGroups((current) => ({
+                                  ...current,
+                                  [group.key]: !current[group.key],
+                                }))
+                              }
+                              aria-expanded={isExpanded}
+                              style={{ background: uiTheme.buttonBackground, color: uiTheme.buttonText }}
+                            >
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
+                                  {isExpanded ? '▾' : '▸'}
+                                </span>
+                                <span>{group.label}</span>
+                              </span>
+                              <span style={{ opacity: 0.7 }}>{group.fields.length}</span>
+                            </button>
+                            <div
+                              className="theme-builder-folder-body"
+                              style={{
+                                borderColor: uiTheme.buttonBorder,
+                                display: isExpanded ? 'grid' : 'none',
+                              }}
+                            >
+                              <span style={{ fontSize: 11, opacity: 0.7 }}>{group.description}</span>
+                              <div
+                                style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                                  gap: 12,
+                                  alignItems: 'end',
+                                }}
+                              >
+                                {group.fields.map((field) => renderChartControlField(field))}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -1457,50 +2014,7 @@ export default function ThemeBuilderWorkspace({
                           <span style={{ fontSize: 11, opacity: 0.7 }}>
                             Stroke, border, line width, corner radius, and opacity controls.
                           </span>
-                          {widthStyleTokens.map((token) => (
-                            <label
-                              key={token.pathText}
-                              style={{
-                                display: 'grid',
-                                gap: 6,
-                                fontSize: 12,
-                                fontWeight: 600,
-                              }}
-                            >
-                              <span>{token.label}</span>
-                              <input
-                                type={token.valueType === 'number' ? 'number' : 'text'}
-                                step={token.valueType === 'number' ? '0.1' : undefined}
-                                value={styleDraftByToken[token.pathText] ?? String(token.value)}
-                                onChange={(event) =>
-                                  setStyleDraftByToken((current) => ({
-                                    ...current,
-                                    [token.pathText]: event.target.value,
-                                  }))
-                                }
-                                onBlur={() =>
-                                  onApplyStyleValueForToken(
-                                    token.pathText,
-                                    styleDraftByToken[token.pathText] ?? String(token.value)
-                                  )
-                                }
-                                onKeyDown={(event) => {
-                                  if (event.key === 'Enter') {
-                                    event.currentTarget.blur();
-                                  }
-                                }}
-                                style={{
-                                  border: '1px solid',
-                                  borderColor: uiTheme.buttonBorder,
-                                  borderRadius: 6,
-                                  padding: '6px 8px',
-                                  background: uiTheme.buttonBackground,
-                                  color: uiTheme.buttonText,
-                                  fontSize: 12,
-                                }}
-                              />
-                            </label>
-                          ))}
+                          {widthStyleTokens.map((token) => renderStyleTokenControl(token))}
                         </>
                       )}
                     </div>
@@ -1530,6 +2044,8 @@ export default function ThemeBuilderWorkspace({
                       style={{
                         borderColor: uiTheme.buttonBorder,
                         display: isColorsSectionExpanded ? 'grid' : 'none',
+                        maxHeight: 'min(52vh, 520px)',
+                        overflow: 'auto',
                       }}
                     >
                       <div style={{ display: 'inline-flex', gap: 6 }}>
@@ -1618,6 +2134,8 @@ export default function ThemeBuilderWorkspace({
                               style={{
                                 borderColor: uiTheme.buttonBorder,
                                 display: isExpanded ? 'grid' : 'none',
+                                maxHeight: 260,
+                                overflow: 'auto',
                               }}
                             >
                               {folder.tokens.map((token) => {
