@@ -154,6 +154,7 @@ function readDefaultBuckets(parameters: Record<string, unknown> | null): AgingBu
 function buildBucketExpressions(buckets: AgingBucketInput[]) {
   const labelParts: string[] = [];
   const orderParts: string[] = [];
+  const dimensionRows: string[] = [];
 
   buckets.forEach((bucket, index) => {
     const conditionParts = bucket.conditions
@@ -162,14 +163,17 @@ function buildBucketExpressions(buckets: AgingBucketInput[]) {
     const joiner = bucket.isSpecial && bucket.combinator === 'OR' ? ' OR ' : ' AND ';
     const condition = conditionParts.join(joiner);
     const label = `'${escapeSqlString(bucket.name)}'`;
+    const order = String(index + 1);
 
     labelParts.push(condition, label);
-    orderParts.push(condition, String(index + 1));
+    orderParts.push(condition, order);
+    dimensionRows.push(`tuple(${order}, ${label})`);
   });
 
   return {
     agingBucketExpr: `multiIf(${labelParts.join(', ')}, 'Unbucketed')`,
     agingBucketOrderExpr: `multiIf(${orderParts.join(', ')}, 9999)`,
+    agingBucketDimRows: dimensionRows.join(', '),
   };
 }
 
@@ -191,18 +195,25 @@ function resolveBucketRuntimeSql(
     typeof runtimeSqlTokens?.agingBucketOrderExpr === 'string' && runtimeSqlTokens.agingBucketOrderExpr.trim()
       ? runtimeSqlTokens.agingBucketOrderExpr.trim()
       : null;
+  const bucketDimRowsToken =
+    typeof runtimeSqlTokens?.agingBucketDimRows === 'string' && runtimeSqlTokens.agingBucketDimRows.trim()
+      ? runtimeSqlTokens.agingBucketDimRows.trim()
+      : null;
 
-  if (!bucketExprToken || !bucketOrderExprToken) {
+  if (!bucketExprToken || !bucketOrderExprToken || !bucketDimRowsToken) {
     throw new Error(
-      'Missing required SQL token contract: runtime.sqlTokens.agingBucketExpr and runtime.sqlTokens.agingBucketOrderExpr.'
+      'Missing required SQL token contract: runtime.sqlTokens.agingBucketExpr, runtime.sqlTokens.agingBucketOrderExpr, and runtime.sqlTokens.agingBucketDimRows.'
     );
   }
 
   const bucketExprPlaceholder = `{{${bucketExprToken}}}`;
   const bucketOrderExprPlaceholder = `{{${bucketOrderExprToken}}}`;
+  const bucketDimRowsPlaceholder = `{{${bucketDimRowsToken}}}`;
 
   const hasBucketTokens =
-    sql.includes(bucketExprPlaceholder) || sql.includes(bucketOrderExprPlaceholder);
+    sql.includes(bucketExprPlaceholder) ||
+    sql.includes(bucketOrderExprPlaceholder) ||
+    sql.includes(bucketDimRowsPlaceholder);
 
   if (!hasBucketTokens) {
     return {
@@ -225,10 +236,11 @@ function resolveBucketRuntimeSql(
     throw new Error('Missing bucket definitions. Provide buckets query param or parameters.buckets.default.');
   }
 
-  const { agingBucketExpr, agingBucketOrderExpr } = buildBucketExpressions(buckets);
+  const { agingBucketExpr, agingBucketOrderExpr, agingBucketDimRows } = buildBucketExpressions(buckets);
   const queryWithBuckets = sql
     .replaceAll(bucketExprPlaceholder, agingBucketExpr)
-    .replaceAll(bucketOrderExprPlaceholder, agingBucketOrderExpr);
+    .replaceAll(bucketOrderExprPlaceholder, agingBucketOrderExpr)
+    .replaceAll(bucketDimRowsPlaceholder, agingBucketDimRows);
 
   const queryParamsWithoutBuckets = { ...queryParams };
   delete queryParamsWithoutBuckets[bucketsParamName];
@@ -346,6 +358,9 @@ function collectContractErrors(
   if (!isNonEmptyString(sqlTokens?.agingBucketOrderExpr)) {
     errors.push('Missing required contract string: runtime.sqlTokens.agingBucketOrderExpr.');
   }
+  if (!isNonEmptyString(sqlTokens?.agingBucketDimRows)) {
+    errors.push('Missing required contract string: runtime.sqlTokens.agingBucketDimRows.');
+  }
 
   const chartRuntime = asObject(runtime?.chartRuntime);
   if (!chartRuntime) {
@@ -404,6 +419,66 @@ function collectContractErrors(
   for (const field of requiredUnitLabelFields) {
     if (!isNonEmptyString(unitLabels?.[field])) {
       errors.push(`Missing required contract string: runtime.chartRuntime.unitLabels.${field}.`);
+    }
+  }
+
+  const controls = asObject(runtime?.controls);
+  if (!controls) {
+    errors.push('Missing required contract object: runtime.controls.');
+  }
+
+  const bucketEditor = asObject(controls?.bucketEditor);
+  if (!bucketEditor) {
+    errors.push('Missing required contract object: runtime.controls.bucketEditor.');
+  }
+
+  const bucketEditorLabels = asObject(bucketEditor?.labels);
+  if (!bucketEditorLabels) {
+    errors.push('Missing required contract object: runtime.controls.bucketEditor.labels.');
+  } else {
+    const requiredBucketEditorLabelFields = [
+      'modalTitle',
+      'modalHelperText',
+      'addBucketButton',
+      'restoreDefaultsButton',
+      'validateButton',
+      'cancelButton',
+      'applyButton',
+      'overlapErrorText',
+      'validateBeforeApplyText',
+    ] as const;
+
+    for (const field of requiredBucketEditorLabelFields) {
+      if (!isNonEmptyString(bucketEditorLabels[field])) {
+        errors.push(`Missing required contract string: runtime.controls.bucketEditor.labels.${field}.`);
+      }
+    }
+  }
+
+  const nameSuggestion = asObject(bucketEditor?.nameSuggestion);
+  if (!nameSuggestion) {
+    errors.push('Missing required contract object: runtime.controls.bucketEditor.nameSuggestion.');
+  } else {
+    const requiredNameSuggestionFields = [
+      'title',
+      'subtitle',
+      'boundsLabel',
+      'currentLabel',
+      'suggestedLabel',
+      'customInputLabel',
+      'previousButtonTitle',
+      'nextButtonTitle',
+      'backButton',
+      'applyCustomNameButton',
+      'useSuggestedButton',
+      'keepCurrentButton',
+      'enterNewNameButton',
+    ] as const;
+
+    for (const field of requiredNameSuggestionFields) {
+      if (!isNonEmptyString(nameSuggestion[field])) {
+        errors.push(`Missing required contract string: runtime.controls.bucketEditor.nameSuggestion.${field}.`);
+      }
     }
   }
 

@@ -78,10 +78,35 @@ charts:
       sqlTokens:
         agingBucketExpr: AGING_BUCKET_EXPR
         agingBucketOrderExpr: AGING_BUCKET_ORDER_EXPR
+        agingBucketDimRows: AGING_BUCKET_DIM_ROWS
       controls:
         reportDate: true
         bucketCustomizer: true
         bucketEditor:
+          labels:
+            modalTitle: Edit Aging Buckets
+            modalHelperText: Buckets can be renamed, and you can adjust upper and lower bounds. Single-condition buckets are supported. For non-aged logic (for example retainage/escrow), create a new bucket and mark it as special to enable no days past due filters & OR conditions.
+            addBucketButton: Add Bucket
+            restoreDefaultsButton: Restore Defaults
+            validateButton: Validate
+            cancelButton: Cancel
+            applyButton: Apply
+            overlapErrorText: Overlapping bucket conditions must be fixed before validation can pass.
+            validateBeforeApplyText: Please validate bucket changes before applying.
+          nameSuggestion:
+            title: Update Bucket Name?
+            subtitle: Bounds changed, so an auto-generated name is available.
+            boundsLabel: Bounds
+            currentLabel: Current
+            suggestedLabel: Suggested
+            customInputLabel: Enter Custom Name
+            previousButtonTitle: Previous bucket
+            nextButtonTitle: Next bucket
+            backButton: Back
+            applyCustomNameButton: Apply Name
+            useSuggestedButton: Use Suggested
+            keepCurrentButton: Keep Current
+            enterNewNameButton: Enter New Name
           operatorOptions:
             - '='
             - '<>'
