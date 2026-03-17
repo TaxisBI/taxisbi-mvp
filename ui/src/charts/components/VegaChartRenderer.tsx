@@ -3,14 +3,16 @@ import { VegaEmbed } from 'react-vega';
 import type { CanvasSizeMode } from '../../reports/ar/aging-bucket/components/ARAgingBucketChart';
 
 type VegaTooltipStyle = {
+  fillColor?: string;
+  textColor?: string;
   fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
   fontStyle?: string;
-  color?: string;
   backgroundColor?: string;
   borderColor?: string;
   borderWidth?: number;
+  borderRadius?: number;
   padding?: number;
 };
 
@@ -100,12 +102,17 @@ export default function VegaChartRenderer({
       ],
       ['--taxisbi-vega-tooltip-font-weight', tooltipStyle.fontWeight],
       ['--taxisbi-vega-tooltip-font-style', tooltipStyle.fontStyle],
-      ['--taxisbi-vega-tooltip-color', tooltipStyle.color],
+      ['--taxisbi-vega-tooltip-fill', tooltipStyle.fillColor],
+      ['--taxisbi-vega-tooltip-text', tooltipStyle.textColor],
       ['--taxisbi-vega-tooltip-background', tooltipStyle.backgroundColor],
       ['--taxisbi-vega-tooltip-border-color', tooltipStyle.borderColor],
       [
         '--taxisbi-vega-tooltip-border-width',
         typeof tooltipStyle.borderWidth === 'number' ? `${tooltipStyle.borderWidth}px` : undefined,
+      ],
+      [
+        '--taxisbi-vega-tooltip-border-radius',
+        typeof tooltipStyle.borderRadius === 'number' ? `${tooltipStyle.borderRadius}px` : undefined,
       ],
       [
         '--taxisbi-vega-tooltip-padding',
@@ -190,7 +197,7 @@ export default function VegaChartRenderer({
           font-size: var(--taxisbi-vega-tooltip-font-size, inherit) !important;
           font-weight: var(--taxisbi-vega-tooltip-font-weight, inherit) !important;
           font-style: var(--taxisbi-vega-tooltip-font-style, inherit) !important;
-          color: var(--taxisbi-vega-tooltip-color, inherit) !important;
+          color: var(--taxisbi-vega-tooltip-text, inherit) !important;
         }
 
         #vg-tooltip-element,
@@ -199,8 +206,16 @@ export default function VegaChartRenderer({
           border-color: var(--taxisbi-vega-tooltip-border-color, currentColor) !important;
           border-style: solid !important;
           border-width: var(--taxisbi-vega-tooltip-border-width, 1px) !important;
+          border-radius: var(--taxisbi-vega-tooltip-border-radius, 8px) !important;
           padding: var(--taxisbi-vega-tooltip-padding, 8px) !important;
           box-sizing: border-box !important;
+        }
+
+        #vg-tooltip-element td.key,
+        #vg-tooltip-element td.value,
+        #vg-tooltip-element th {
+          background: var(--taxisbi-vega-tooltip-fill, transparent) !important;
+          border-radius: calc(var(--taxisbi-vega-tooltip-border-radius, 8px) - 2px) !important;
         }
       `}</style>
       {embedErrorMessage ? (

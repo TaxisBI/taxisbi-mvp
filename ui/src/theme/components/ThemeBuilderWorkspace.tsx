@@ -1264,7 +1264,7 @@ export default function ThemeBuilderWorkspace({
                                     ? barLabelTypography
                                     : section.key === 'tooltip'
                                       ? tooltipTypography
-                                      : tableTypography;
+                                      : sharedTypography;
 
                           return (
                             <div

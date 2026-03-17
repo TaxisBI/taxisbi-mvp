@@ -443,14 +443,16 @@ export default function ThemePreviewChart({
       cardBackground={uiTheme.cardBackground}
       cardShadow={uiTheme.cardShadow}
       tooltipStyle={{
+        fillColor: tooltipCardBackground,
         fontFamily: tooltipTypography.fontFamily,
         fontSize: tooltipTypography.fontSize,
         fontWeight: tooltipTypography.fontWeight,
         fontStyle: tooltipTypography.fontStyle,
-        color: tooltipTypography.fontColor,
+        textColor: tooltipTypography.fontColor,
         backgroundColor: tooltipCardBackground,
         borderColor: tooltipCardBorder,
         borderWidth: tooltipBorderWidth,
+        borderRadius: 8,
         padding: tooltipPadding,
       }}
       canvasSizeMode="fit-width"

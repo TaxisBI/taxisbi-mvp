@@ -13,6 +13,7 @@ export type ChartArtifactPaths = {
   packName: string;
   chartName: string;
   packRootPath: string;
+  packManifestPath: string;
   chartSpecPath: string;
   querySqlPath: string;
 };
@@ -68,6 +69,7 @@ export async function resolvePackPaths(
     packName,
     chartName,
     packRootPath,
+    packManifestPath: path.join(packRootPath, 'pack.yaml'),
     chartSpecPath: path.join(packRootPath, 'charts', `${chartName}.vl.json`),
     querySqlPath: path.join(packRootPath, 'queries', `${chartName}.sql`),
   };

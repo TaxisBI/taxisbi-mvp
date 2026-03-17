@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import VegaChartRenderer from '../../../../charts/components/VegaChartRenderer';
 import { applyThemeToChart } from '../../../../theme/applyThemeToChart';
+import type { ChartUiThemeContract } from '../../../../theme/types';
 
 export type CanvasSizeMode =
   | 'fit-width'
@@ -37,35 +38,30 @@ export type ThemeDefinition = {
   spec?: Record<string, unknown>;
 };
 
-export type ResolvedUiTheme = {
-  pageBackground: string;
-  pageText: string;
-  cardBackground: string;
-  cardShadow: string;
-  buttonBackground: string;
-  buttonText: string;
-  buttonBorder: string;
-  hoverColor: string;
-  fontFamily: string;
-  modalOverlayBackground: string;
-  statusDanger: string;
-  statusSuccess: string;
-  statusOnColor: string;
-  chartBarDefaultColor: string;
-  chartBarHoverColor: string;
-  chartBarDefaultOpacity: number;
-  chartBarHoverOpacity: number;
-  chartBarDefaultStrokeColor: string;
-  chartBarHoverStrokeColor: string;
-  chartBarDefaultStrokeOpacity: number;
-  chartBarHoverStrokeOpacity: number;
-  chartBarDefaultStrokeWidth: number;
-  chartBarHoverStrokeWidth: number;
-  overlapPalette: Array<{ border: string; background: string }>;
-  tooltipTheme: 'light' | 'dark';
+export type ResolvedUiTheme = ChartUiThemeContract;
+
+export type ChartParameterDefinition = {
+  type: string;
+  uiControl?: string;
+  label?: string;
+  description?: string;
+  required?: boolean;
+  default?: unknown;
+};
+
+export type ChartPackMetadata = {
+  parameters?: Record<string, ChartParameterDefinition>;
+  runtime?: Record<string, unknown>;
+};
+
+export type ChartContext = {
+  domain: string;
+  pack: string;
+  chart: string;
 };
 
 type ARAgingBucketChartProps = {
+  chartContext: ChartContext;
   theme: string;
   reportDate: string;
   buckets: AgingBucketDef[];
@@ -78,6 +74,7 @@ type ARAgingBucketChartProps = {
     selectedThemeKey: string,
     defaultThemeKey: string
   ) => void;
+  onPackMetadataResolved?: (metadata: ChartPackMetadata) => void;
 };
 
 export type AgingBucketDef = {
@@ -93,6 +90,64 @@ export type AgingBucketDef = {
 
 function isObject(value: unknown): value is Record<string, any> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function toObject(value: unknown): Record<string, unknown> {
+  return isObject(value) ? (value as Record<string, unknown>) : {};
+}
+
+function requireObject(value: unknown, label: string): Record<string, unknown> {
+  if (isObject(value)) {
+    return value as Record<string, unknown>;
+  }
+  throw new Error(`Missing required object in chart contract: ${label}`);
+}
+
+function requireString(value: unknown, label: string): string {
+  if (typeof value === 'string' && value.trim()) {
+    return value;
+  }
+  throw new Error(`Missing required string in chart contract: ${label}`);
+}
+
+function requireNumber(value: unknown, label: string): number {
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+    return value;
+  }
+  throw new Error(`Missing required number in chart contract: ${label}`);
+}
+
+function requireBoolean(value: unknown, label: string): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  throw new Error(`Missing required boolean in chart contract: ${label}`);
+}
+
+function escapeVegaLabelExpressionLiteral(value: string) {
+  return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function trimTrailingZeros(value: string) {
+  return value.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+}
+
+function formatCurrency(value: number, symbol: string, decimals: number) {
+  const numberPart = value.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+  return `${symbol}${numberPart}`;
+}
+
+function formatCompactCurrency(value: number, symbol: string, decimals: number, suffix: string) {
+  const numberPart = trimTrailingZeros(
+    value.toLocaleString(undefined, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    })
+  );
+  return `${symbol}${numberPart}${suffix}`;
 }
 
 function deepMerge<T>(base: T, override: any): T {
@@ -136,6 +191,7 @@ function fallbackThemeOrder(key: string) {
 }
 
 export default function ARAgingBucketChart({
+  chartContext,
   theme,
   reportDate,
   buckets,
@@ -144,36 +200,157 @@ export default function ARAgingBucketChart({
   onThemeCatalogResolved,
   onUiThemeResolved,
   onThemeDefinitionsResolved,
+  onPackMetadataResolved,
 }: ARAgingBucketChartProps) {
   const [uiTheme, setUiTheme] = useState({
     cardBackground: '',
     cardShadow: '',
     tooltipTheme: 'light' as 'light' | 'dark',
+    tooltipStyle: {
+      fillColor: '',
+      backgroundColor: '',
+      textColor: '',
+      fontFamily: '',
+      fontSize: 12,
+      fontWeight: '',
+      fontStyle: '',
+      borderColor: '',
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: 8,
+    },
   });
   const [spec, setSpec] = useState<any>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const requestSequenceRef = useRef(0);
 
   useEffect(() => {
+    const abortController = new AbortController();
+    const requestId = requestSequenceRef.current + 1;
+    requestSequenceRef.current = requestId;
+
+    const serializedBuckets = JSON.stringify(
+      buckets.map((bucket) => ({
+        name: bucket.name,
+        isSpecial: bucket.isSpecial,
+        combinator: bucket.combinator,
+        conditions: bucket.conditions,
+      }))
+    );
+
     async function loadChart() {
-      const params = new URLSearchParams({
+      setErrorMessage(null);
+      const chartPath = `/api/charts/${chartContext.domain}/${chartContext.pack}/${chartContext.chart}`;
+      const initialParams = new URLSearchParams({
         report_date: reportDate,
-        buckets: JSON.stringify(
-          buckets.map((bucket) => ({
-            name: bucket.name,
-            isSpecial: bucket.isSpecial,
-            combinator: bucket.combinator,
-            conditions: bucket.conditions,
-          }))
-        ),
+        buckets: serializedBuckets,
       });
-      const res = await fetch(`/api/charts/ar/receivable_item/aging_by_bucket?${params.toString()}`);
-      const json = await res.json();
+      let res = await fetch(`${chartPath}?${initialParams.toString()}`, {
+        signal: abortController.signal,
+        cache: 'no-store',
+      });
+      let json = await res.json();
 
       if (!res.ok) {
         throw new Error(typeof json?.error === 'string' ? json.error : 'Failed to load chart');
       }
 
-      const themes = (json.themes ?? {}) as Record<string, ThemeDefinition>;
-      const fallbackThemeKey = (json.defaultTheme as string | undefined) ?? 'light';
+      const initialRuntime = toObject(json.runtime);
+      const initialQueryParams = toObject(initialRuntime.queryParams);
+      const reportDateParamName =
+        typeof initialQueryParams.reportDate === 'string'
+          ? initialQueryParams.reportDate
+          : 'report_date';
+      const bucketsParamName =
+        typeof initialQueryParams.buckets === 'string' ? initialQueryParams.buckets : 'buckets';
+
+      if (reportDateParamName !== 'report_date' || bucketsParamName !== 'buckets') {
+        const metadataParams = new URLSearchParams();
+        metadataParams.set(reportDateParamName, reportDate);
+        metadataParams.set(bucketsParamName, serializedBuckets);
+
+        res = await fetch(`${chartPath}?${metadataParams.toString()}`, {
+          signal: abortController.signal,
+          cache: 'no-store',
+        });
+        json = await res.json();
+      }
+
+      if (!res.ok) {
+        throw new Error(typeof json?.error === 'string' ? json.error : 'Failed to load chart');
+      }
+
+      onPackMetadataResolved?.({
+        parameters: toObject(json.parameters) as Record<string, ChartParameterDefinition>,
+        runtime: toObject(json.runtime),
+      });
+
+      const runtime = requireObject(json.runtime, 'runtime');
+      const chartRuntime = requireObject(runtime.chartRuntime, 'runtime.chartRuntime');
+      const valueField = requireString(chartRuntime.valueField, 'runtime.chartRuntime.valueField');
+      const categoryField = requireString(chartRuntime.categoryField, 'runtime.chartRuntime.categoryField');
+      const bucketOrderField = requireString(
+        chartRuntime.bucketOrderField,
+        'runtime.chartRuntime.bucketOrderField'
+      );
+      const hoverField = requireString(chartRuntime.hoverField, 'runtime.chartRuntime.hoverField');
+      const hoverParamName = requireString(
+        chartRuntime.hoverParamName,
+        'runtime.chartRuntime.hoverParamName'
+      );
+      const xAxisTitlePrefix = requireString(
+        chartRuntime.xAxisTitlePrefix,
+        'runtime.chartRuntime.xAxisTitlePrefix'
+      );
+      const unitLabels = requireObject(chartRuntime.unitLabels, 'runtime.chartRuntime.unitLabels');
+      const unitBaseLabel = requireString(unitLabels.base, 'runtime.chartRuntime.unitLabels.base');
+      const unitThousandLabel = requireString(
+        unitLabels.thousand,
+        'runtime.chartRuntime.unitLabels.thousand'
+      );
+      const unitMillionLabel = requireString(
+        unitLabels.million,
+        'runtime.chartRuntime.unitLabels.million'
+      );
+      const unitBillionLabel = requireString(
+        unitLabels.billion,
+        'runtime.chartRuntime.unitLabels.billion'
+      );
+      const valueFormatting = requireObject(
+        chartRuntime.valueFormatting,
+        'runtime.chartRuntime.valueFormatting'
+      );
+      const axisDecimals = requireNumber(
+        valueFormatting.axisDecimals,
+        'runtime.chartRuntime.valueFormatting.axisDecimals'
+      );
+      const compactDecimals = requireNumber(
+        valueFormatting.compactDecimals,
+        'runtime.chartRuntime.valueFormatting.compactDecimals'
+      );
+      const tooltipDecimals = requireNumber(
+        valueFormatting.tooltipDecimals,
+        'runtime.chartRuntime.valueFormatting.tooltipDecimals'
+      );
+      const tooltipContract = requireObject(chartRuntime.tooltip, 'runtime.chartRuntime.tooltip');
+      const tooltipEnabled = requireBoolean(
+        tooltipContract.enabled,
+        'runtime.chartRuntime.tooltip.enabled'
+      );
+      const tooltipCategoryTitle = requireString(
+        tooltipContract.categoryTitle,
+        'runtime.chartRuntime.tooltip.categoryTitle'
+      );
+      const tooltipValueTitle = requireString(
+        tooltipContract.valueTitle,
+        'runtime.chartRuntime.tooltip.valueTitle'
+      );
+
+      const themes = requireObject(json.themes, 'themes') as Record<string, ThemeDefinition>;
+      const fallbackThemeKey = requireString(json.defaultTheme, 'defaultTheme');
+      if (Object.keys(themes).length === 0) {
+        throw new Error('Theme contract violation: themes payload is empty.');
+      }
       const themeOptions = Object.entries(themes)
         .map(([key, value]) => ({
           key,
@@ -191,46 +368,95 @@ export default function ARAgingBucketChart({
           return left.label.localeCompare(right.label);
         });
       onThemeCatalogResolved?.(themeOptions, fallbackThemeKey);
-      const selectedTheme = themes[theme] ?? themes[fallbackThemeKey] ?? undefined;
+      const selectedTheme = themes[theme] ?? themes[fallbackThemeKey];
       const selectedThemeKey = themes[theme]
         ? theme
         : themes[fallbackThemeKey]
           ? fallbackThemeKey
-          : Object.keys(themes)[0] ?? fallbackThemeKey;
-      const fallbackTheme = themes[fallbackThemeKey] ?? themes.light ?? Object.values(themes)[0];
-      const selectedUi = (selectedTheme?.ui ?? {}) as Record<string, unknown>;
-      const fallbackUi = (fallbackTheme?.ui ?? {}) as Record<string, unknown>;
+          : (() => {
+              throw new Error('Theme contract violation: defaultTheme not found in themes payload.');
+            })();
+      const fallbackTheme = themes[fallbackThemeKey];
+      if (!fallbackTheme || !selectedTheme) {
+        throw new Error('Theme contract violation: selected/fallback theme is missing.');
+      }
+
+      const selectedThemeUi = requireObject(selectedTheme.ui, `themes.${selectedThemeKey}.ui`);
+      const currencySymbol = requireString(
+        selectedThemeUi.currencySymbol,
+        `themes.${selectedThemeKey}.ui.currencySymbol`
+      );
+      const compactSuffixes = requireObject(
+        selectedThemeUi.compactSuffixes,
+        `themes.${selectedThemeKey}.ui.compactSuffixes`
+      );
+      const compactThousandSuffix = requireString(
+        compactSuffixes.thousand,
+        `themes.${selectedThemeKey}.ui.compactSuffixes.thousand`
+      );
+      const compactMillionSuffix = requireString(
+        compactSuffixes.million,
+        `themes.${selectedThemeKey}.ui.compactSuffixes.million`
+      );
+      const compactBillionSuffix = requireString(
+        compactSuffixes.billion,
+        `themes.${selectedThemeKey}.ui.compactSuffixes.billion`
+      );
 
       onThemeDefinitionsResolved?.(themes, selectedThemeKey, fallbackThemeKey);
 
       const mergedSpec = selectedTheme?.spec ? deepMerge(json.spec, selectedTheme.spec) : json.spec;
 
       // Use generic theme application utility
-      const chartTheme = applyThemeToChart(selectedTheme ?? {});
+      const resolvedUiTheme = applyThemeToChart(selectedTheme ?? fallbackTheme ?? {});
       setUiTheme({
-        cardBackground: chartTheme.cardBackground,
-        cardShadow: chartTheme.cardShadow,
-        tooltipTheme: chartTheme.tooltipTheme,
+        cardBackground: resolvedUiTheme.cardBackground,
+        cardShadow: resolvedUiTheme.cardShadow,
+        tooltipTheme: resolvedUiTheme.tooltipTheme,
+        tooltipStyle: resolvedUiTheme.tooltipStyle,
       });
-      onUiThemeResolved?.(chartTheme);
+      onUiThemeResolved?.(resolvedUiTheme);
 
       const balances = (json.data ?? [])
-        .map((row: any) => Number(row.Balance))
+        .map((row: any) => Number(row[valueField]))
         .filter((value: number) => Number.isFinite(value));
       const maxBalance = balances.length > 0 ? Math.max(...balances) : 0;
 
       let unit = 1;
-      let unitTitle = 'Dollars';
+      let unitTitle = unitBaseLabel;
+      let compactSuffix = '';
       if (maxBalance >= 1000000000) {
         unit = 1000000000;
-        unitTitle = 'Billions';
+        unitTitle = unitBillionLabel;
+        compactSuffix = compactBillionSuffix;
       } else if (maxBalance >= 1000000) {
         unit = 1000000;
-        unitTitle = 'Millions';
+        unitTitle = unitMillionLabel;
+        compactSuffix = compactMillionSuffix;
       } else if (maxBalance >= 1000) {
         unit = 1000;
-        unitTitle = 'Thousands';
+        unitTitle = unitThousandLabel;
+        compactSuffix = compactThousandSuffix;
       }
+
+      const compactValueField = '__taxisbi_compact_value_label';
+      const tooltipValueField = '__taxisbi_tooltip_value_label';
+      const chartData = (json.data ?? []).map((row: Record<string, unknown>) => {
+        const rawValue = Number(row[valueField]);
+        if (!Number.isFinite(rawValue)) {
+          return {
+            ...row,
+            [compactValueField]: `${currencySymbol}0`,
+            [tooltipValueField]: `${currencySymbol}0.00`,
+          };
+        }
+
+        return {
+          ...row,
+          [compactValueField]: formatCompactCurrency(rawValue / unit, currencySymbol, compactDecimals, compactSuffix),
+          [tooltipValueField]: formatCurrency(rawValue, currencySymbol, tooltipDecimals),
+        };
+      });
 
       const step = 2 * unit;
       const maxTick = Math.max(step, Math.ceil(maxBalance / step) * step);
@@ -254,7 +480,7 @@ export default function ARAgingBucketChart({
 
       const firstLayer = Array.isArray(mergedSpec.layer) ? mergedSpec.layer[0] : undefined;
       const hasHoverParam = Array.isArray(firstLayer?.params)
-        ? firstLayer.params.some((entry: any) => entry?.name === 'barHoverLocal')
+        ? firstLayer.params.some((entry: any) => entry?.name === hoverParamName)
         : false;
       const barDefaultColorFromSpec =
         typeof firstLayer?.mark?.color === 'string' ? firstLayer.mark.color : undefined;
@@ -271,6 +497,9 @@ export default function ARAgingBucketChart({
         barDefaultStrokeOpacityFromSpec ?? resolvedUiTheme.chartBarDefaultStrokeOpacity;
       const chartBarDefaultStrokeWidth =
         barDefaultStrokeWidthFromSpec ?? resolvedUiTheme.chartBarDefaultStrokeWidth;
+      const mergedEncoding = toObject(mergedSpec.encoding);
+      const mergedXEncoding = toObject(mergedEncoding.x);
+      const mergedYEncoding = toObject(mergedEncoding.y);
 
       const fullSpec = {
         ...mergedSpec,
@@ -309,10 +538,22 @@ export default function ARAgingBucketChart({
             font: mergedSpec.config?.text?.font ?? resolvedUiTheme.fontFamily,
           },
         },
-        data: { values: json.data },
+        data: { values: chartData },
         layer: Array.isArray(mergedSpec.layer)
           ? mergedSpec.layer.map((layerEntry: any, layerIndex: number) => {
               if (layerIndex !== 0) {
+                if (layerIndex === 1) {
+                  return {
+                    ...layerEntry,
+                    encoding: {
+                      ...(layerEntry?.encoding ?? {}),
+                      text: {
+                        field: compactValueField,
+                        type: 'nominal',
+                      },
+                    },
+                  };
+                }
                 return layerEntry;
               }
 
@@ -325,10 +566,10 @@ export default function ARAgingBucketChart({
                   : [
                       ...existingParams,
                       {
-                        name: 'barHoverLocal',
+                        name: hoverParamName,
                         select: {
                           type: 'point',
-                          fields: ['AgingBucket'],
+                          fields: [hoverField],
                           on: 'mouseover',
                           clear: 'mouseout',
                         },
@@ -336,9 +577,25 @@ export default function ARAgingBucketChart({
                     ],
                 encoding: {
                   ...(layerEntry?.encoding ?? {}),
+                  ...(tooltipEnabled
+                    ? {
+                        tooltip: [
+                          {
+                            field: categoryField,
+                            type: 'nominal',
+                            title: tooltipCategoryTitle,
+                          },
+                          {
+                            field: tooltipValueField,
+                            type: 'nominal',
+                            title: tooltipValueTitle,
+                          },
+                        ],
+                      }
+                    : {}),
                   color: {
                     condition: {
-                      param: 'barHoverLocal',
+                      param: hoverParamName,
                       empty: false,
                       value: resolvedUiTheme.chartBarHoverColor,
                     },
@@ -346,7 +603,7 @@ export default function ARAgingBucketChart({
                   },
                   opacity: {
                     condition: {
-                      param: 'barHoverLocal',
+                      param: hoverParamName,
                       empty: false,
                       value: resolvedUiTheme.chartBarHoverOpacity,
                     },
@@ -354,7 +611,7 @@ export default function ARAgingBucketChart({
                   },
                   stroke: {
                     condition: {
-                      param: 'barHoverLocal',
+                      param: hoverParamName,
                       empty: false,
                       value: resolvedUiTheme.chartBarHoverStrokeColor,
                     },
@@ -362,7 +619,7 @@ export default function ARAgingBucketChart({
                   },
                   strokeOpacity: {
                     condition: {
-                      param: 'barHoverLocal',
+                      param: hoverParamName,
                       empty: false,
                       value: resolvedUiTheme.chartBarHoverStrokeOpacity,
                     },
@@ -370,7 +627,7 @@ export default function ARAgingBucketChart({
                   },
                   strokeWidth: {
                     condition: {
-                      param: 'barHoverLocal',
+                      param: hoverParamName,
                       empty: false,
                       value: resolvedUiTheme.chartBarHoverStrokeWidth,
                     },
@@ -381,35 +638,50 @@ export default function ARAgingBucketChart({
             })
           : mergedSpec.layer,
         encoding: {
-          ...mergedSpec.encoding,
+          ...mergedEncoding,
           y: {
-            ...mergedSpec.encoding?.y,
+            ...mergedYEncoding,
             sort: {
-              field: 'BucketOrder',
+              field: bucketOrderField,
               op: 'min',
               order: 'ascending',
             },
           },
           x: {
-            ...mergedSpec.encoding.x,
-            title: `Receivable Balance (${unitTitle})`,
+            ...mergedXEncoding,
+            title: `${xAxisTitlePrefix} (${unitTitle})`,
             axis: {
-              ...mergedSpec.encoding?.x?.axis,
+              ...toObject(mergedXEncoding.axis),
               values: axisValues,
-              labelExpr: `format(datum.value / ${unit}, '.0f')`,
+              labelExpr: `'${escapeVegaLabelExpressionLiteral(currencySymbol)}' + format(datum.value / ${unit}, ',.${axisDecimals}f')`,
             },
           },
         },
       };
 
+      if (requestSequenceRef.current !== requestId) {
+        return;
+      }
+
       setSpec(fullSpec);
     }
 
     loadChart().catch((error) => {
+      if (abortController.signal.aborted) {
+        return;
+      }
       console.error(error);
       setSpec(null);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to load chart.');
     });
+
+    return () => {
+      abortController.abort();
+    };
   }, [
+    chartContext.domain,
+    chartContext.pack,
+    chartContext.chart,
     theme,
     reportDate,
     buckets,
@@ -418,9 +690,13 @@ export default function ARAgingBucketChart({
     onThemeCatalogResolved,
     onUiThemeResolved,
     onThemeDefinitionsResolved,
+    onPackMetadataResolved,
   ]);
 
   if (!spec) {
+    if (errorMessage) {
+      return <div>{errorMessage}</div>;
+    }
     return <div>Loading chart...</div>;
   }
 
@@ -428,6 +704,7 @@ export default function ARAgingBucketChart({
     <VegaChartRenderer
       spec={spec}
       tooltipTheme={uiTheme.tooltipTheme}
+      tooltipStyle={uiTheme.tooltipStyle}
       cardBackground={uiTheme.cardBackground}
       cardShadow={uiTheme.cardShadow}
       canvasSizeMode={canvasSizeMode}

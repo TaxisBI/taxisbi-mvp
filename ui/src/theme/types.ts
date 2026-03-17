@@ -70,3 +70,46 @@ export type ThemeBuilderUiTheme = {
   modalOverlayBackground: string;
   statusDanger: string;
 };
+
+export type TooltipStyleContract = {
+  fillColor: string;
+  backgroundColor: string;
+  textColor: string;
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: string;
+  fontStyle: string;
+  borderColor: string;
+  borderWidth: number;
+  borderRadius: number;
+  padding: number;
+};
+
+export type ChartUiThemeContract = {
+  pageBackground: string;
+  pageText: string;
+  cardBackground: string;
+  cardShadow: string;
+  buttonBackground: string;
+  buttonText: string;
+  buttonBorder: string;
+  hoverColor: string;
+  fontFamily: string;
+  modalOverlayBackground: string;
+  statusDanger: string;
+  statusSuccess: string;
+  statusOnColor: string;
+  chartBarDefaultColor: string;
+  chartBarHoverColor: string;
+  chartBarDefaultOpacity: number;
+  chartBarHoverOpacity: number;
+  chartBarDefaultStrokeColor: string;
+  chartBarHoverStrokeColor: string;
+  chartBarDefaultStrokeOpacity: number;
+  chartBarHoverStrokeOpacity: number;
+  chartBarDefaultStrokeWidth: number;
+  chartBarHoverStrokeWidth: number;
+  overlapPalette: Array<{ border: string; background: string }>;
+  tooltipTheme: 'light' | 'dark';
+  tooltipStyle: TooltipStyleContract;
+};

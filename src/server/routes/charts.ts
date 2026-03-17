@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { ChartContractValidationError } from '../packs/getChartPayload';
 import { getChartPayload } from '../packs/getChartPayload';
 import { PackArtifactNotFoundError } from '../packs/resolvePackPaths';
 
@@ -26,6 +27,14 @@ chartsRouter.get('/:domain/:pack/:chart', async (req: Request, res: Response) =>
   } catch (error) {
     if (error instanceof PackArtifactNotFoundError) {
       res.status(404).json({ error: error.message });
+      return;
+    }
+
+    if (error instanceof ChartContractValidationError) {
+      res.status(422).json({
+        error: error.message,
+        contractErrors: error.contractErrors,
+      });
       return;
     }
 

@@ -15,6 +15,7 @@ import {
 import ARAgingBucketChart, {
   AgingBucketDef,
   CanvasSizeMode,
+  ChartPackMetadata,
   ResolvedUiTheme,
   ThemeOption,
 } from './components/ARAgingBucketChart';
@@ -32,6 +33,14 @@ type BucketCombinator = 'AND' | 'OR';
 const OPERATOR_OPTIONS: BucketOperator[] = ['=', '<>', '>=', '<=', '>', '<'];
 const COMBINATOR_OPTIONS: BucketCombinator[] = ['AND', 'OR'];
 
+function isBucketOperator(value: unknown): value is BucketOperator {
+  return value === '=' || value === '<>' || value === '>=' || value === '<=' || value === '>' || value === '<';
+}
+
+function isBucketCombinator(value: unknown): value is BucketCombinator {
+  return value === 'AND' || value === 'OR';
+}
+
 const OPERATOR_LABELS: Record<BucketOperator, string> = {
   '=': '=',
   '<>': '!=',
@@ -41,57 +50,14 @@ const OPERATOR_LABELS: Record<BucketOperator, string> = {
   '<': '<',
 };
 
-const DEFAULT_BUCKETS: AgingBucketDef[] = [
-  {
-    id: 'b1',
-    name: 'Current',
-    isSpecial: false,
-    combinator: 'AND',
-    conditions: [{ operator: '<=', value: 0 }],
-  },
-  {
-    id: 'b2',
-    name: '1-30',
-    isSpecial: false,
-    combinator: 'AND',
-    conditions: [
-      { operator: '>=', value: 1 },
-      { operator: '<=', value: 30 },
-    ],
-  },
-  {
-    id: 'b3',
-    name: '31-60',
-    isSpecial: false,
-    combinator: 'AND',
-    conditions: [
-      { operator: '>=', value: 31 },
-      { operator: '<=', value: 60 },
-    ],
-  },
-  {
-    id: 'b4',
-    name: '61-90',
-    isSpecial: false,
-    combinator: 'AND',
-    conditions: [
-      { operator: '>=', value: 61 },
-      { operator: '<=', value: 90 },
-    ],
-  },
-  {
-    id: 'b5',
-    name: '91+',
-    isSpecial: false,
-    combinator: 'AND',
-    conditions: [{ operator: '>', value: 90 }],
-  },
-];
+let defaultBucketIds = new Set<string>();
 
-const DEFAULT_BUCKET_IDS = new Set(DEFAULT_BUCKETS.map((bucket) => bucket.id));
+function setDefaultBucketIds(ids: string[]) {
+  defaultBucketIds = new Set(ids);
+}
 
 function isDefaultBucketId(id: string) {
-  return DEFAULT_BUCKET_IDS.has(id);
+  return defaultBucketIds.has(id);
 }
 
 const CANVAS_SIZE_OPTIONS: Array<{ value: CanvasSizeMode; label: string; displayOrder: number }> = [
@@ -108,6 +74,8 @@ const CANVAS_SIZE_OPTIONS: Array<{ value: CanvasSizeMode; label: string; display
 const CANVAS_SIZE_OPTIONS_SORTED = [...CANVAS_SIZE_OPTIONS].sort(
   (left, right) => left.displayOrder - right.displayOrder
 );
+
+type CanvasSizeOption = { value: CanvasSizeMode; label: string; displayOrder: number };
 
 function getPageMaxWidthByCanvasMode(
   mode: CanvasSizeMode,
@@ -232,6 +200,108 @@ type OverlapMetadata = {
   colorByBucketId: Map<string, OverlapColorToken>;
 };
 
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseBucketDefaultsFromMetadata(metadata: ChartPackMetadata | null): AgingBucketDef[] | null {
+  if (!metadata || !isObject(metadata.parameters)) {
+    return null;
+  }
+
+  const rawBucketsParam = metadata.parameters.buckets;
+  if (!isObject(rawBucketsParam) || !Array.isArray(rawBucketsParam.default)) {
+    return null;
+  }
+
+  const parsed = rawBucketsParam.default
+    .map((entry, index) => {
+      if (!isObject(entry)) {
+        return null;
+      }
+
+      const name = typeof entry.name === 'string' ? entry.name.trim() : '';
+      if (!name) {
+        return null;
+      }
+
+      const id = typeof entry.id === 'string' && entry.id.trim() ? entry.id : `pack-default-${index}`;
+      const combinator = entry.combinator === 'OR' ? 'OR' : 'AND';
+      const isSpecial = entry.isSpecial === true;
+
+      const conditions = Array.isArray(entry.conditions)
+        ? entry.conditions
+            .map((raw) => {
+              if (!isObject(raw) || !OPERATOR_OPTIONS.includes(raw.operator as BucketOperator)) {
+                return null;
+              }
+              const value = Number(raw.value);
+              if (!Number.isInteger(value)) {
+                return null;
+              }
+              return {
+                operator: raw.operator as BucketOperator,
+                value,
+              };
+            })
+            .filter((value): value is { operator: BucketOperator; value: number } => value !== null)
+        : [];
+
+      if (conditions.length === 0) {
+        return null;
+      }
+
+      return {
+        id,
+        name,
+        isSpecial,
+        combinator,
+        conditions: conditions.slice(0, 2),
+      } satisfies AgingBucketDef;
+    })
+    .filter((value): value is AgingBucketDef => value !== null);
+
+  return parsed.length > 0 ? parsed : null;
+}
+
+function hasStoredBuckets() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  const raw = window.localStorage.getItem(BUCKET_STORAGE_KEY);
+  return Boolean(raw && raw.trim());
+}
+
+function parseCanvasSizeOptionsFromMetadata(metadata: ChartPackMetadata | null): CanvasSizeOption[] {
+  if (!metadata || !isObject(metadata.runtime)) {
+    return [];
+  }
+
+  const controls = isObject(metadata.runtime.controls) ? metadata.runtime.controls : null;
+  const options = controls && Array.isArray(controls.canvasSizeOptions) ? controls.canvasSizeOptions : null;
+
+  if (!options) {
+    return [];
+  }
+
+  const parsed = options
+    .map((entry) => {
+      if (!isObject(entry) || typeof entry.value !== 'string' || !isCanvasSizeMode(entry.value)) {
+        return null;
+      }
+
+      return {
+        value: entry.value,
+        label: typeof entry.label === 'string' && entry.label.trim() ? entry.label : entry.value,
+        displayOrder: typeof entry.displayOrder === 'number' ? entry.displayOrder : 999,
+      } as CanvasSizeOption;
+    })
+    .filter((value): value is CanvasSizeOption => value !== null)
+    .sort((left, right) => left.displayOrder - right.displayOrder);
+
+  return parsed;
+}
+
 function getTodayIsoDate() {
   const now = new Date();
   const year = now.getFullYear();
@@ -251,6 +321,13 @@ function isValidIsoDate(value: string) {
   }
 
   return parsed.toISOString().slice(0, 10) === value;
+}
+
+function formatBucketRule(bucket: AgingBucketDef) {
+  const conditionText = bucket.conditions
+    .map((condition) => `${condition.operator} ${condition.value}`)
+    .join(` ${bucket.combinator} `);
+  return `${bucket.name}: ${conditionText}`;
 }
 
 type LocaleDateMeta = {
@@ -445,18 +522,18 @@ function reorderById<T extends { id: string }>(items: T[], sourceId: string, tar
 
 function loadStoredBuckets(): AgingBucketDef[] {
   if (typeof window === 'undefined') {
-    return DEFAULT_BUCKETS;
+    return [];
   }
 
   const raw = window.localStorage.getItem(BUCKET_STORAGE_KEY);
   if (!raw) {
-    return DEFAULT_BUCKETS;
+    return [];
   }
 
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed) || parsed.length === 0) {
-      return DEFAULT_BUCKETS;
+      return [];
     }
 
     const buckets = parsed
@@ -535,9 +612,9 @@ function loadStoredBuckets(): AgingBucketDef[] {
       .filter((value): value is AgingBucketDef => value !== null)
       .map((bucket) => normalizeLegacyDefaultBucket(bucket));
 
-    return buckets.length > 0 ? buckets : DEFAULT_BUCKETS;
+    return buckets;
   } catch {
-    return DEFAULT_BUCKETS;
+    return [];
   }
 }
 
@@ -681,6 +758,14 @@ type ARAgingBucketPageProps = {
 };
 
 export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketPageProps) {
+  const chartContext = useMemo(
+    () => ({
+      domain: 'ar',
+      pack: 'receivable_item',
+      chart: 'aging_by_bucket',
+    }),
+    []
+  );
   const reportDatePickerRef = useRef<HTMLInputElement | null>(null);
   const themePopoverRef = useRef<HTMLDivElement | null>(null);
   const themeButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -785,8 +870,169 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
     chartBarHoverStrokeWidth: 3,
     overlapPalette: [],
     tooltipTheme: 'light',
+    tooltipStyle: {
+      fillColor: '',
+      backgroundColor: '',
+      textColor: '',
+      fontFamily: 'inherit',
+      fontSize: 12,
+      fontWeight: '600',
+      fontStyle: 'normal',
+      borderColor: '',
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: 8,
+    },
   });
+  const [packMetadata, setPackMetadata] = useState<ChartPackMetadata | null>(null);
+  const metadataDefaultBuckets = useMemo(
+    () => parseBucketDefaultsFromMetadata(packMetadata),
+    [packMetadata]
+  );
+  const canvasSizeOptions = useMemo(
+    () => parseCanvasSizeOptionsFromMetadata(packMetadata),
+    [packMetadata]
+  );
   const pageMaxWidth = getPageMaxWidthByCanvasMode(canvasSizeMode, customCanvasSize);
+
+  const runtime = isObject(packMetadata?.runtime) ? packMetadata.runtime : {};
+  const runtimeControls = isObject(runtime.controls) ? runtime.controls : {};
+  const runtimeBucketEditor = isObject(runtimeControls.bucketEditor) ? runtimeControls.bucketEditor : {};
+  const parameters = isObject(packMetadata?.parameters) ? packMetadata.parameters : {};
+  const hasDatePickerParam = Object.values(parameters).some(
+    (entry) => isObject(entry) && entry.uiControl === 'date_picker'
+  );
+  const hasBucketCustomizerParam = Object.values(parameters).some(
+    (entry) => isObject(entry) && entry.uiControl === 'bucket_customizer'
+  );
+  const showReportDateControl =
+    typeof runtimeControls.reportDate === 'boolean'
+      ? runtimeControls.reportDate
+      : hasDatePickerParam;
+  const showBucketCustomizerControl =
+    typeof runtimeControls.bucketCustomizer === 'boolean'
+      ? runtimeControls.bucketCustomizer
+      : hasBucketCustomizerParam;
+  const bucketOperatorOptions = Array.isArray(runtimeBucketEditor.operatorOptions)
+    ? runtimeBucketEditor.operatorOptions.filter((value): value is BucketOperator => isBucketOperator(value))
+    : OPERATOR_OPTIONS;
+  const bucketCombinatorOptions = Array.isArray(runtimeBucketEditor.combinatorOptions)
+    ? runtimeBucketEditor.combinatorOptions.filter(
+        (value): value is BucketCombinator => isBucketCombinator(value)
+      )
+    : COMBINATOR_OPTIONS;
+  const effectiveOperatorOptions = bucketOperatorOptions.length > 0 ? bucketOperatorOptions : OPERATOR_OPTIONS;
+  const effectiveCombinatorOptions =
+    bucketCombinatorOptions.length > 0 ? bucketCombinatorOptions : COMBINATOR_OPTIONS;
+  const allowedOperatorSet = useMemo(
+    () => new Set<BucketOperator>(effectiveOperatorOptions),
+    [effectiveOperatorOptions]
+  );
+  const allowedCombinatorSet = useMemo(
+    () => new Set<BucketCombinator>(effectiveCombinatorOptions),
+    [effectiveCombinatorOptions]
+  );
+
+  useEffect(() => {
+    if (!metadataDefaultBuckets) {
+      return;
+    }
+
+    setDefaultBucketIds(metadataDefaultBuckets.map((bucket) => bucket.id));
+  }, [metadataDefaultBuckets]);
+
+  useEffect(() => {
+    if (!metadataDefaultBuckets || hasStoredBuckets()) {
+      return;
+    }
+
+    setBuckets(metadataDefaultBuckets);
+    setBucketDraft(metadataDefaultBuckets.map(toDraft));
+  }, [metadataDefaultBuckets]);
+
+  useEffect(() => {
+    if (canvasSizeOptions.length === 0) {
+      return;
+    }
+
+    if (canvasSizeOptions.some((entry) => entry.value === canvasSizeMode)) {
+      return;
+    }
+
+    setCanvasSizeMode(canvasSizeOptions[0].value);
+  }, [canvasSizeMode, canvasSizeOptions]);
+
+  useEffect(() => {
+    const normalizeCombinator = (value: BucketCombinator) =>
+      allowedCombinatorSet.has(value) ? value : effectiveCombinatorOptions[0] ?? 'AND';
+
+    const sanitizeBuckets = (input: AgingBucketDef[]) =>
+      input
+        .map((bucket) => {
+          const conditions = bucket.conditions
+            .filter((condition) => allowedOperatorSet.has(condition.operator))
+            .slice(0, 2);
+
+          if (conditions.length === 0) {
+            return null;
+          }
+
+          return {
+            ...bucket,
+            combinator: normalizeCombinator(bucket.combinator),
+            conditions,
+          } as AgingBucketDef;
+        })
+        .filter((value): value is AgingBucketDef => value !== null);
+
+    setBuckets((current) => {
+      const sanitized = sanitizeBuckets(current);
+      if (sanitized.length === 0) {
+        return current;
+      }
+
+      return JSON.stringify(sanitized) === JSON.stringify(current) ? current : sanitized;
+    });
+
+    setBucketDraft((current) => {
+      const parsed = current
+        .map((bucket) => {
+          const parsedConditions = [bucket.primary, bucket.secondary]
+            .filter((condition) => condition.enabled)
+            .map((condition) => ({
+              operator: condition.operator,
+              value: parseInteger(condition.value),
+            }))
+            .filter(
+              (condition): condition is { operator: BucketOperator; value: number } =>
+                condition.value !== null
+            )
+            .filter((condition) => allowedOperatorSet.has(condition.operator));
+
+          if (parsedConditions.length === 0) {
+            return null;
+          }
+
+          return {
+            id: bucket.id,
+            name: bucket.name,
+            isSpecial: bucket.isSpecial,
+            combinator: allowedCombinatorSet.has(bucket.combinator)
+              ? bucket.combinator
+              : effectiveCombinatorOptions[0] ?? 'AND',
+            conditions: parsedConditions,
+          } satisfies AgingBucketDef;
+        })
+        .filter((value): value is AgingBucketDef => value !== null);
+
+      if (parsed.length === 0) {
+        return current;
+      }
+
+      const sanitizedDraft = parsed.map(toDraft);
+      return JSON.stringify(sanitizedDraft) === JSON.stringify(current) ? current : sanitizedDraft;
+    });
+  }, [allowedCombinatorSet, allowedOperatorSet, effectiveCombinatorOptions]);
 
   const handleThemeCatalogResolved = (catalog: ThemeOption[], defaultTheme: string) => {
     if (catalog.length > 0) {
@@ -942,6 +1188,10 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
         throw new Error(`Bucket ${index + 1} primary condition value is required.`);
       }
 
+      if (!allowedOperatorSet.has(bucket.primary.operator)) {
+        throw new Error(`Bucket ${index + 1} primary operator is not allowed by this pack.`);
+      }
+
       const conditions: Array<{ operator: BucketOperator; value: number }> = [
         {
           operator: bucket.primary.operator,
@@ -952,6 +1202,10 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
       if (bucket.secondary.enabled) {
         if (secondaryValue === null) {
           throw new Error(`Bucket ${index + 1} secondary condition value is required.`);
+        }
+
+        if (!allowedOperatorSet.has(bucket.secondary.operator)) {
+          throw new Error(`Bucket ${index + 1} secondary operator is not allowed by this pack.`);
         }
 
         conditions.push({
@@ -965,7 +1219,11 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
         name,
         isSpecial: isDefaultBucketId(bucket.id) ? false : bucket.isSpecial,
         combinator:
-          !isDefaultBucketId(bucket.id) && bucket.isSpecial ? bucket.combinator : 'AND',
+          !isDefaultBucketId(bucket.id) && bucket.isSpecial
+            ? allowedCombinatorSet.has(bucket.combinator)
+              ? bucket.combinator
+              : effectiveCombinatorOptions[0] ?? 'AND'
+            : 'AND',
         conditions,
       };
     });
@@ -1239,7 +1497,7 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
   const restoreDefaultBuckets = () => {
     setValidationPassed(false);
     setValidatedBucketIds(new Set());
-    setBucketDraft(DEFAULT_BUCKETS.map(toDraft));
+    setBucketDraft((metadataDefaultBuckets ?? []).map(toDraft));
     setBucketError(null);
   };
 
@@ -1558,6 +1816,7 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
       ? `${activeSuggestionBucket.primary.operator} ${activeSuggestionBucket.primary.value || '?'} ${activeSuggestionBucket.combinator} ${activeSuggestionBucket.secondary.operator} ${activeSuggestionBucket.secondary.value || '?'}`
       : `${activeSuggestionBucket.primary.operator} ${activeSuggestionBucket.primary.value || '?'}`
     : '-';
+  const appliedBucketSummary = buckets.map(formatBucketRule).join(' | ');
 
   return (
     <>
@@ -1695,7 +1954,7 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
                         fontWeight: 600,
                       }}
                     >
-                      {CANVAS_SIZE_OPTIONS_SORTED.map((option) => (
+                      {canvasSizeOptions.map((option) => (
                         <option key={option.value} value={option.value}>
                           {option.label}
                         </option>
@@ -1734,6 +1993,7 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 14 }}>
+          {showReportDateControl ? (
           <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 600 }}>Report Date</span>
           <div
@@ -1830,6 +2090,8 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
             </button>
           </div>
           </label>
+          ) : null}
+          {showBucketCustomizerControl ? (
           <button
             type="button"
             onClick={openBucketEditor}
@@ -1847,10 +2109,12 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
           >
             Edit Buckets
           </button>
+          ) : null}
         </div>
       </div>
       <h1 style={{ marginTop: 0, marginBottom: 20, textAlign: 'center' }}>AR Aging</h1>
       <ARAgingBucketChart
+        chartContext={chartContext}
         theme={theme}
         reportDate={reportDate}
         buckets={buckets}
@@ -1858,7 +2122,25 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
         customCanvasSize={customCanvasSize}
         onThemeCatalogResolved={handleThemeCatalogResolved}
         onUiThemeResolved={setUiTheme}
+        onPackMetadataResolved={setPackMetadata}
       />
+      <div
+        style={{
+          marginTop: 10,
+          marginBottom: 6,
+          padding: '8px 10px',
+          border: '1px solid',
+          borderColor: uiTheme.buttonBorder,
+          borderRadius: 8,
+          background: uiTheme.cardBackground,
+          color: uiTheme.pageText,
+          fontSize: 12,
+          lineHeight: 1.45,
+          opacity: 0.95,
+        }}
+      >
+        <strong>Applied bucket bounds:</strong> {appliedBucketSummary}
+      </div>
       {isCanvasDialogOpen ? (
         <div
           role="dialog"
@@ -1974,7 +2256,7 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
           </div>
         </div>
       ) : null}
-      {isEditorOpen ? (
+      {isEditorOpen && showBucketCustomizerControl ? (
         <div
           role="dialog"
           aria-modal="true"
@@ -2133,7 +2415,7 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
                             minWidth: 64,
                           }}
                         >
-                          {OPERATOR_OPTIONS.map((option) => (
+                          {effectiveOperatorOptions.map((option) => (
                             <option key={`p-${bucket.id}-${option}`} value={option}>
                               {OPERATOR_LABELS[option]}
                             </option>
@@ -2182,7 +2464,7 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
                                 cursor: 'pointer',
                               }}
                             >
-                              {COMBINATOR_OPTIONS.map((option) => (
+                              {effectiveCombinatorOptions.map((option) => (
                                 <option key={`${bucket.id}-${option}`} value={option}>
                                   {option}
                                 </option>
@@ -2219,7 +2501,7 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
                                 minWidth: 64,
                               }}
                             >
-                              {OPERATOR_OPTIONS.map((option) => (
+                              {effectiveOperatorOptions.map((option) => (
                                 <option key={`s-${bucket.id}-${option}`} value={option}>
                                   {OPERATOR_LABELS[option]}
                                 </option>
