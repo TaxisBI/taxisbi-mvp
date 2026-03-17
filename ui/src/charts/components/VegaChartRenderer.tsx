@@ -1,6 +1,6 @@
 import { Component, ReactNode, useEffect, useState } from 'react';
 import { VegaEmbed } from 'react-vega';
-import type { CanvasSizeMode } from '../../reports/ar/aging-bucket/components/ARAgingBucketChart';
+import type { CanvasSizeMode } from '../../reports/ar/aging-bucket/types';
 
 type VegaTooltipStyle = {
   fillColor?: string;
@@ -68,6 +68,7 @@ type VegaChartRendererProps = {
   tooltipTheme: 'light' | 'dark';
   cardBackground: string;
   cardShadow: string;
+  cardBorderRadius?: number;
   tooltipStyle?: VegaTooltipStyle;
   canvasSizeMode?: CanvasSizeMode;
   customCanvasSize?: { width: number; height: number };
@@ -78,6 +79,7 @@ export default function VegaChartRenderer({
   tooltipTheme,
   cardBackground,
   cardShadow,
+  cardBorderRadius = 12,
   tooltipStyle,
   canvasSizeMode = 'fit-width',
   customCanvasSize = { width: 1280, height: 720 },
@@ -174,7 +176,7 @@ export default function VegaChartRenderer({
         height: layout.height,
         aspectRatio: layout.aspectRatio,
         background: cardBackground,
-        borderRadius: 12,
+        borderRadius: cardBorderRadius,
         boxShadow: cardShadow,
         padding: 16,
         overflow: 'auto',

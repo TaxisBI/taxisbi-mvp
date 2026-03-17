@@ -13,6 +13,10 @@ function asTooltipTheme(value: unknown): 'light' | 'dark' {
   return value === 'dark' ? 'dark' : 'light';
 }
 
+function asDashStyle(value: unknown): 'solid' | 'dotted' | 'dashed' {
+  return value === 'dotted' || value === 'dashed' ? value : 'solid';
+}
+
 function asOverlapPalette(value: unknown): Array<{ border: string; background: string }> {
   if (!Array.isArray(value)) {
     return [];
@@ -68,6 +72,35 @@ export function applyThemeToChart(theme: ThemeDefinition): ChartUiThemeContract 
     chartBarHoverStrokeOpacity: asNumber(ui.chartBarHoverStrokeOpacity, 1),
     chartBarDefaultStrokeWidth: asNumber(ui.chartBarDefaultStrokeWidth, 2),
     chartBarHoverStrokeWidth: asNumber(ui.chartBarHoverStrokeWidth, 3),
+    chartCardBorderRadius: asNumber(ui.chartCardBorderRadius, 12),
+    chartViewCornerRadius: asNumber(ui.chartViewCornerRadius, 0),
+    chartBarCornerRadius: asNumber(ui.chartBarCornerRadius, 4),
+    chartRectCornerRadius: asNumber(ui.chartRectCornerRadius, 4),
+    chartLegendCornerRadius: asNumber(ui.chartLegendCornerRadius, 4),
+    chartBarBandPaddingInner: asNumber(ui.chartBarBandPaddingInner, 0.15),
+    chartBarBandPaddingOuter: asNumber(ui.chartBarBandPaddingOuter, 0.1),
+    chartBandPaddingInner: asNumber(ui.chartBandPaddingInner, 0.15),
+    chartBandPaddingOuter: asNumber(ui.chartBandPaddingOuter, 0.1),
+    chartBarDiscreteBandSize: asNumber(ui.chartBarDiscreteBandSize, 20),
+    chartBarContinuousBandSize: asNumber(ui.chartBarContinuousBandSize, 5),
+    chartLineStrokeColor: asString(ui.chartLineStrokeColor, '#4f46e5'),
+    chartLineFillColor: asString(ui.chartLineFillColor, '#4f46e5'),
+    chartLineStrokeWidth: asNumber(ui.chartLineStrokeWidth, 2),
+    chartLinePointFillColor: asString(ui.chartLinePointFillColor, '#4f46e5'),
+    chartLinePointStrokeColor: asString(ui.chartLinePointStrokeColor, '#ffffff'),
+    chartLinePointStrokeWidth: asNumber(ui.chartLinePointStrokeWidth, 1),
+    titleFontFamily: asString(ui.titleFontFamily, asString(ui.fontFamily, 'Helvetica, Arial, sans-serif')),
+    titleFontSize: asNumber(ui.titleFontSize, 18),
+    titleFontWeight: asString(ui.titleFontWeight, '600'),
+    titleFontStyle: asString(ui.titleFontStyle, 'normal'),
+    titleFontColor: asString(ui.titleFontColor, asString(ui.pageText, '#101828')),
+    axisTickCount: asNumber(ui.axisTickCount, 6),
+    axisGridDashStyle: asDashStyle(ui.axisGridDashStyle),
+    axisDomainDashStyle: asDashStyle(ui.axisDomainDashStyle),
+    axisTickDashStyle: asDashStyle(ui.axisTickDashStyle),
+    axisGridWidth: asNumber(ui.axisGridWidth, 1),
+    axisTickWidth: asNumber(ui.axisTickWidth, 1),
+    axisDomainWidth: asNumber(ui.axisDomainWidth, 1),
     overlapPalette:
       asOverlapPalette(ui.overlapPalette).length > 0
         ? asOverlapPalette(ui.overlapPalette)

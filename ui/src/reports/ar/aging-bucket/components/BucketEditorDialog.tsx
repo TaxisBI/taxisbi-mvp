@@ -7,7 +7,7 @@ import {
   WarningFilled,
 } from '@fluentui/react-icons';
 import type { RefObject } from 'react';
-import type { ResolvedUiTheme } from './ARAgingBucketChart';
+import type { ResolvedUiTheme } from '../types';
 import type {
   BucketCombinator,
   BucketDraft,

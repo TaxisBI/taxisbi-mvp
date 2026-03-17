@@ -1,6 +1,6 @@
 import { CalendarRegular, SettingsRegular } from '@fluentui/react-icons';
 import type { RefObject } from 'react';
-import type { CanvasSizeMode, ResolvedUiTheme, ThemeOption } from './ARAgingBucketChart';
+import type { CanvasSizeMode, ResolvedUiTheme, ThemeOption } from '../types';
 
 type CanvasSizeOption = { value: CanvasSizeMode; label: string; displayOrder: number };
 

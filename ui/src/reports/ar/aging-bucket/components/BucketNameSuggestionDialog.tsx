@@ -2,7 +2,7 @@ import { ArrowLeftRegular, ArrowRightRegular, CheckmarkRegular } from '@fluentui
 import type { RefObject } from 'react';
 import type { BucketDraft } from '../bucketEditorEngine';
 import type { NameSuggestionDialogState } from '../hooks/useBucketEditorState';
-import type { ResolvedUiTheme } from './ARAgingBucketChart';
+import type { ResolvedUiTheme } from '../types';
 
 type BucketNameSuggestionDialogProps = {
   isOpen: boolean;

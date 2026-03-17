@@ -1,64 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import VegaChartRenderer from '../../../../charts/components/VegaChartRenderer';
 import { applyThemeToChart } from '../../../../theme/applyThemeToChart';
-import type { ChartUiThemeContract } from '../../../../theme/types';
-
-export type CanvasSizeMode =
-  | 'fit-width'
-  | 'fit-height'
-  | 'fit-screen'
-  | 'ratio-4-3'
-  | 'ratio-16-9'
-  | 'ratio-16-10'
-  | 'ratio-21-9'
-  | 'custom-pixels';
-
-export type ThemeOption = {
-  key: string;
-  label: string;
-  scope?: 'global' | 'domain' | 'pack' | 'dashboard';
-  createdBy?: string;
-  displayOrder?: number;
-};
-
-export type ThemeDefinition = {
-  key?: string;
-  label?: string;
-  scope?: 'global' | 'domain' | 'pack' | 'dashboard';
-  createdBy?: string;
-  displayOrder?: number;
-  extends?: string;
-  appliesTo?: {
-    domain?: string[];
-    pack?: string[];
-    chart?: string[];
-    dashboard?: string[];
-  };
-  ui?: Record<string, unknown>;
-  spec?: Record<string, unknown>;
-};
-
-export type ResolvedUiTheme = ChartUiThemeContract;
-
-export type ChartParameterDefinition = {
-  type: string;
-  uiControl?: string;
-  label?: string;
-  description?: string;
-  required?: boolean;
-  default?: unknown;
-};
-
-export type ChartPackMetadata = {
-  parameters?: Record<string, ChartParameterDefinition>;
-  runtime?: Record<string, unknown>;
-};
-
-export type ChartContext = {
-  domain: string;
-  pack: string;
-  chart: string;
-};
+import type {
+  AgingBucketDef,
+  CanvasSizeMode,
+  ChartContext,
+  ChartPackMetadata,
+  ChartParameterDefinition,
+  ResolvedUiTheme,
+  ThemeDefinition,
+  ThemeOption,
+} from '../types';
 
 type ARAgingBucketChartProps = {
   chartContext: ChartContext;
@@ -75,17 +27,6 @@ type ARAgingBucketChartProps = {
     defaultThemeKey: string
   ) => void;
   onPackMetadataResolved?: (metadata: ChartPackMetadata) => void;
-};
-
-export type AgingBucketDef = {
-  id: string;
-  name: string;
-  isSpecial: boolean;
-  combinator: 'AND' | 'OR';
-  conditions: Array<{
-    operator: '=' | '<>' | '>=' | '<=' | '>' | '<';
-    value: number;
-  }>;
 };
 
 function isObject(value: unknown): value is Record<string, any> {
@@ -150,6 +91,16 @@ function formatCompactCurrency(value: number, symbol: string, decimals: number, 
   return `${symbol}${numberPart}${suffix}`;
 }
 
+function resolveDash(style: 'solid' | 'dotted' | 'dashed'): number[] {
+  if (style === 'dotted') {
+    return [1, 3];
+  }
+  if (style === 'dashed') {
+    return [6, 4];
+  }
+  return [];
+}
+
 function deepMerge<T>(base: T, override: any): T {
   if (override === undefined) {
     return base;
@@ -205,6 +156,7 @@ export default function ARAgingBucketChart({
   const [uiTheme, setUiTheme] = useState({
     cardBackground: '',
     cardShadow: '',
+    cardBorderRadius: 12,
     tooltipTheme: 'light' as 'light' | 'dark',
     tooltipStyle: {
       fillColor: '',
@@ -412,6 +364,7 @@ export default function ARAgingBucketChart({
       setUiTheme({
         cardBackground: resolvedUiTheme.cardBackground,
         cardShadow: resolvedUiTheme.cardShadow,
+        cardBorderRadius: resolvedUiTheme.chartCardBorderRadius,
         tooltipTheme: resolvedUiTheme.tooltipTheme,
         tooltipStyle: resolvedUiTheme.tooltipStyle,
       });
@@ -500,6 +453,9 @@ export default function ARAgingBucketChart({
       const mergedEncoding = toObject(mergedSpec.encoding);
       const mergedXEncoding = toObject(mergedEncoding.x);
       const mergedYEncoding = toObject(mergedEncoding.y);
+      const gridDash = resolveDash(resolvedUiTheme.axisGridDashStyle);
+      const domainDash = resolveDash(resolvedUiTheme.axisDomainDashStyle);
+      const tickDash = resolveDash(resolvedUiTheme.axisTickDashStyle);
 
       const fullSpec = {
         ...mergedSpec,
@@ -514,24 +470,74 @@ export default function ARAgingBucketChart({
           ...(mergedSpec.config ?? {}),
           ...(mergedSpec.config?.style ? { style: mergedSpec.config.style } : {}),
           font: mergedSpec.config?.font ?? resolvedUiTheme.fontFamily,
+          view: {
+            ...(mergedSpec.config?.view ?? {}),
+            cornerRadius: mergedSpec.config?.view?.cornerRadius ?? resolvedUiTheme.chartViewCornerRadius,
+          },
           axis: {
             ...(mergedSpec.config?.axis ?? {}),
             labelFont: mergedSpec.config?.axis?.labelFont ?? resolvedUiTheme.fontFamily,
             titleFont: mergedSpec.config?.axis?.titleFont ?? resolvedUiTheme.fontFamily,
+            tickCount: mergedSpec.config?.axis?.tickCount ?? resolvedUiTheme.axisTickCount,
+            gridDash: mergedSpec.config?.axis?.gridDash ?? gridDash,
+            domainDash: mergedSpec.config?.axis?.domainDash ?? domainDash,
+            tickDash: mergedSpec.config?.axis?.tickDash ?? tickDash,
+            gridWidth: mergedSpec.config?.axis?.gridWidth ?? resolvedUiTheme.axisGridWidth,
+            tickWidth: mergedSpec.config?.axis?.tickWidth ?? resolvedUiTheme.axisTickWidth,
+            domainWidth: mergedSpec.config?.axis?.domainWidth ?? resolvedUiTheme.axisDomainWidth,
           },
           legend: {
             ...(mergedSpec.config?.legend ?? {}),
             labelFont: mergedSpec.config?.legend?.labelFont ?? resolvedUiTheme.fontFamily,
             titleFont: mergedSpec.config?.legend?.titleFont ?? resolvedUiTheme.fontFamily,
+            cornerRadius:
+              mergedSpec.config?.legend?.cornerRadius ?? resolvedUiTheme.chartLegendCornerRadius,
           },
           header: {
             ...(mergedSpec.config?.header ?? {}),
             labelFont: mergedSpec.config?.header?.labelFont ?? resolvedUiTheme.fontFamily,
             titleFont: mergedSpec.config?.header?.titleFont ?? resolvedUiTheme.fontFamily,
           },
+          scale: {
+            ...(mergedSpec.config?.scale ?? {}),
+            bandPaddingInner:
+              mergedSpec.config?.scale?.bandPaddingInner ?? resolvedUiTheme.chartBandPaddingInner,
+            bandPaddingOuter:
+              mergedSpec.config?.scale?.bandPaddingOuter ?? resolvedUiTheme.chartBandPaddingOuter,
+          },
+          bar: {
+            ...(mergedSpec.config?.bar ?? {}),
+            cornerRadius: mergedSpec.config?.bar?.cornerRadius ?? resolvedUiTheme.chartBarCornerRadius,
+            discreteBandSize:
+              mergedSpec.config?.bar?.discreteBandSize ?? resolvedUiTheme.chartBarDiscreteBandSize,
+            continuousBandSize:
+              mergedSpec.config?.bar?.continuousBandSize ?? resolvedUiTheme.chartBarContinuousBandSize,
+            binSpacing: mergedSpec.config?.bar?.binSpacing ?? resolvedUiTheme.chartBarBandPaddingInner,
+          },
+          rect: {
+            ...(mergedSpec.config?.rect ?? {}),
+            cornerRadius: mergedSpec.config?.rect?.cornerRadius ?? resolvedUiTheme.chartRectCornerRadius,
+          },
+          line: {
+            ...(mergedSpec.config?.line ?? {}),
+            color: mergedSpec.config?.line?.color ?? resolvedUiTheme.chartLineStrokeColor,
+            fill: mergedSpec.config?.line?.fill ?? resolvedUiTheme.chartLineFillColor,
+            strokeWidth: mergedSpec.config?.line?.strokeWidth ?? resolvedUiTheme.chartLineStrokeWidth,
+          },
+          point: {
+            ...(mergedSpec.config?.point ?? {}),
+            fill: mergedSpec.config?.point?.fill ?? resolvedUiTheme.chartLinePointFillColor,
+            stroke: mergedSpec.config?.point?.stroke ?? resolvedUiTheme.chartLinePointStrokeColor,
+            strokeWidth:
+              mergedSpec.config?.point?.strokeWidth ?? resolvedUiTheme.chartLinePointStrokeWidth,
+          },
           title: {
             ...(mergedSpec.config?.title ?? {}),
-            font: mergedSpec.config?.title?.font ?? resolvedUiTheme.fontFamily,
+            font: mergedSpec.config?.title?.font ?? resolvedUiTheme.titleFontFamily,
+            fontSize: mergedSpec.config?.title?.fontSize ?? resolvedUiTheme.titleFontSize,
+            fontWeight: mergedSpec.config?.title?.fontWeight ?? resolvedUiTheme.titleFontWeight,
+            fontStyle: mergedSpec.config?.title?.fontStyle ?? resolvedUiTheme.titleFontStyle,
+            color: mergedSpec.config?.title?.color ?? resolvedUiTheme.titleFontColor,
           },
           text: {
             ...(mergedSpec.config?.text ?? {}),
@@ -541,12 +547,51 @@ export default function ARAgingBucketChart({
         data: { values: chartData },
         layer: Array.isArray(mergedSpec.layer)
           ? mergedSpec.layer.map((layerEntry: any, layerIndex: number) => {
+              const layerMark =
+                layerEntry && typeof layerEntry.mark === 'object' ? layerEntry.mark : undefined;
+              const layerMarkType =
+                typeof layerEntry?.mark === 'string'
+                  ? layerEntry.mark
+                  : typeof layerMark?.type === 'string'
+                    ? layerMark.type
+                    : undefined;
+
+              const layerWithSeriesStyling =
+                layerMarkType === 'line'
+                  ? {
+                      ...layerEntry,
+                      mark:
+                        typeof layerEntry?.mark === 'string'
+                          ? layerEntry.mark
+                          : {
+                              ...layerMark,
+                              stroke: layerMark?.stroke ?? resolvedUiTheme.chartLineStrokeColor,
+                              fill: layerMark?.fill ?? resolvedUiTheme.chartLineFillColor,
+                              strokeWidth: layerMark?.strokeWidth ?? resolvedUiTheme.chartLineStrokeWidth,
+                            },
+                    }
+                  : layerMarkType === 'point'
+                    ? {
+                        ...layerEntry,
+                        mark:
+                          typeof layerEntry?.mark === 'string'
+                            ? layerEntry.mark
+                            : {
+                                ...layerMark,
+                                fill: layerMark?.fill ?? resolvedUiTheme.chartLinePointFillColor,
+                                stroke: layerMark?.stroke ?? resolvedUiTheme.chartLinePointStrokeColor,
+                                strokeWidth:
+                                  layerMark?.strokeWidth ?? resolvedUiTheme.chartLinePointStrokeWidth,
+                              },
+                      }
+                    : layerEntry;
+
               if (layerIndex !== 0) {
                 if (layerIndex === 1) {
                   return {
-                    ...layerEntry,
+                    ...layerWithSeriesStyling,
                     encoding: {
-                      ...(layerEntry?.encoding ?? {}),
+                      ...(layerWithSeriesStyling?.encoding ?? {}),
                       text: {
                         field: compactValueField,
                         type: 'nominal',
@@ -554,13 +599,23 @@ export default function ARAgingBucketChart({
                     },
                   };
                 }
-                return layerEntry;
+                return layerWithSeriesStyling;
               }
 
-              const existingParams = Array.isArray(layerEntry?.params) ? layerEntry.params : [];
+              const existingParams = Array.isArray(layerWithSeriesStyling?.params)
+                ? layerWithSeriesStyling.params
+                : [];
 
               return {
-                ...layerEntry,
+                ...layerWithSeriesStyling,
+                mark:
+                  typeof layerWithSeriesStyling?.mark === 'string'
+                    ? layerWithSeriesStyling.mark
+                    : {
+                        ...(layerWithSeriesStyling?.mark ?? {}),
+                        cornerRadius:
+                          layerWithSeriesStyling?.mark?.cornerRadius ?? resolvedUiTheme.chartBarCornerRadius,
+                      },
                 params: hasHoverParam
                   ? existingParams
                   : [
@@ -576,7 +631,7 @@ export default function ARAgingBucketChart({
                       },
                     ],
                 encoding: {
-                  ...(layerEntry?.encoding ?? {}),
+                  ...(layerWithSeriesStyling?.encoding ?? {}),
                   ...(tooltipEnabled
                     ? {
                         tooltip: [
@@ -707,6 +762,7 @@ export default function ARAgingBucketChart({
       tooltipStyle={uiTheme.tooltipStyle}
       cardBackground={uiTheme.cardBackground}
       cardShadow={uiTheme.cardShadow}
+      cardBorderRadius={uiTheme.cardBorderRadius}
       canvasSizeMode={canvasSizeMode}
       customCanvasSize={customCanvasSize}
     />

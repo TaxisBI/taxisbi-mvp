@@ -363,7 +363,16 @@ export default function ThemeBuilderWorkspace({
     [styleStudioTokens]
   );
 
-  const sharedTypography = resolveTypographySettings(editableThemeUi, null);
+  const sharedTypography = resolveTypographySettings(editableThemeUi, null, {
+    fontFamily: 'Helvetica, Arial, sans-serif',
+    fontStyle: 'normal',
+    fontWeight: 'normal',
+    fontSize: 12,
+    fontColor: normalizeHexColor(uiTheme.pageText) ?? '#111827',
+    textRenderMode: 'fill',
+    textStrokeColor: normalizeHexColor(uiTheme.pageText) ?? '#111827',
+    textStrokeWidth: 1.2,
+  });
   const titleTypography = resolveTypographySettings(editableThemeUi, 'title', sharedTypography);
   const legendTypography = resolveTypographySettings(editableThemeUi, 'legend', sharedTypography);
   const axisTypography = resolveTypographySettings(editableThemeUi, 'axis', sharedTypography);

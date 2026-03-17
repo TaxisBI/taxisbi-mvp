@@ -68,6 +68,25 @@ function getUiString(
   return typeof value === 'string' && value.trim() ? value : fallback;
 }
 
+function getUiDashStyle(
+  editableThemeUi: Record<string, unknown> | null,
+  key: string,
+  fallback: 'solid' | 'dotted' | 'dashed'
+): 'solid' | 'dotted' | 'dashed' {
+  const value = getUiString(editableThemeUi, key, fallback);
+  return value === 'dotted' || value === 'dashed' ? value : 'solid';
+}
+
+function toDashArray(style: 'solid' | 'dotted' | 'dashed') {
+  if (style === 'dotted') {
+    return [1, 3];
+  }
+  if (style === 'dashed') {
+    return [6, 4];
+  }
+  return [];
+}
+
 function getUiColor(
   editableThemeUi: Record<string, unknown> | null,
   key: string,
@@ -230,6 +249,25 @@ export default function ThemePreviewChart({
   );
   const tooltipBorderWidth = Math.max(0, getUiNumber(editableThemeUi, 'tooltipBorderWidth', 1));
   const tooltipPadding = Math.max(0, getUiNumber(editableThemeUi, 'tooltipPadding', 12));
+  const chartCardBorderRadius = Math.max(0, getUiNumber(editableThemeUi, 'chartCardBorderRadius', 12));
+  const chartViewCornerRadius = Math.max(0, getUiNumber(editableThemeUi, 'chartViewCornerRadius', 0));
+  const chartBarCornerRadius = Math.max(0, getUiNumber(editableThemeUi, 'chartBarCornerRadius', 4));
+  const chartRectCornerRadius = Math.max(0, getUiNumber(editableThemeUi, 'chartRectCornerRadius', 4));
+  const chartBarBandPaddingInner = Math.max(0, getUiNumber(editableThemeUi, 'chartBarBandPaddingInner', 0.15));
+  const chartBarBandPaddingOuter = Math.max(0, getUiNumber(editableThemeUi, 'chartBarBandPaddingOuter', 0.1));
+  const chartLineStrokeColor = getUiColor(editableThemeUi, 'chartLineStrokeColor', hoverColor);
+  const chartLineFillColor = getUiColor(editableThemeUi, 'chartLineFillColor', hoverColor);
+  const chartLineStrokeWidth = Math.max(0, getUiNumber(editableThemeUi, 'chartLineStrokeWidth', 2));
+  const chartLinePointFillColor = getUiColor(editableThemeUi, 'chartLinePointFillColor', statusSuccess);
+  const chartLinePointStrokeColor = getUiColor(editableThemeUi, 'chartLinePointStrokeColor', pageBackground);
+  const chartLinePointStrokeWidth = Math.max(0, getUiNumber(editableThemeUi, 'chartLinePointStrokeWidth', 1));
+  const axisTickCount = Math.max(2, getUiNumber(editableThemeUi, 'axisTickCount', 6));
+  const axisGridDash = toDashArray(getUiDashStyle(editableThemeUi, 'axisGridDashStyle', 'solid'));
+  const axisTickDash = toDashArray(getUiDashStyle(editableThemeUi, 'axisTickDashStyle', 'solid'));
+  const axisDomainDash = toDashArray(getUiDashStyle(editableThemeUi, 'axisDomainDashStyle', 'solid'));
+  const axisGridWidth = Math.max(0, getUiNumber(editableThemeUi, 'axisGridWidth', 1));
+  const axisTickWidth = Math.max(0, getUiNumber(editableThemeUi, 'axisTickWidth', 1));
+  const axisDomainWidth = Math.max(0, getUiNumber(editableThemeUi, 'axisDomainWidth', 1));
 
   const spec = {
     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
@@ -257,6 +295,7 @@ export default function ThemePreviewChart({
           opacity: 0.24,
           strokeWidth: 1,
           strokeDash: [3, 3],
+          cornerRadius: chartRectCornerRadius,
         },
         encoding: {
           x: { datum: 'Apr' },
@@ -279,8 +318,8 @@ export default function ThemePreviewChart({
         ],
         mark: {
           type: 'bar',
-          cornerRadiusTopLeft: 4,
-          cornerRadiusTopRight: 4,
+          cornerRadiusTopLeft: chartBarCornerRadius,
+          cornerRadiusTopRight: chartBarCornerRadius,
         },
         encoding: {
           x: { field: 'month', type: 'ordinal', title: 'Month' },
@@ -338,7 +377,14 @@ export default function ThemePreviewChart({
         },
       },
       {
-        mark: { type: 'line', point: false, strokeDash: [6, 4], strokeWidth: 2 },
+        mark: {
+          type: 'line',
+          point: false,
+          strokeDash: [6, 4],
+          stroke: chartLineStrokeColor,
+          fill: chartLineFillColor,
+          strokeWidth: chartLineStrokeWidth,
+        },
         encoding: {
           x: { field: 'month', type: 'ordinal' },
           y: { field: 'target', type: 'quantitative' },
@@ -346,7 +392,14 @@ export default function ThemePreviewChart({
         },
       },
       {
-        mark: { type: 'point', size: 70, filled: true },
+        mark: {
+          type: 'point',
+          size: 70,
+          filled: true,
+          fill: chartLinePointFillColor,
+          stroke: chartLinePointStrokeColor,
+          strokeWidth: chartLinePointStrokeWidth,
+        },
         encoding: {
           x: { field: 'month', type: 'ordinal' },
           y: { field: 'target', type: 'quantitative' },
@@ -383,7 +436,17 @@ export default function ThemePreviewChart({
     ],
     config: {
       background: pageBackground,
-      view: { stroke: axisGrid, strokeOpacity: 0.85 },
+      view: { stroke: axisGrid, strokeOpacity: 0.85, cornerRadius: chartViewCornerRadius },
+      scale: {
+        bandPaddingInner: chartBarBandPaddingInner,
+        bandPaddingOuter: chartBarBandPaddingOuter,
+      },
+      bar: {
+        cornerRadius: chartBarCornerRadius,
+      },
+      rect: {
+        cornerRadius: chartRectCornerRadius,
+      },
       axis: {
         labelColor: axisTypography.fontColor,
         titleColor: axisTypography.fontColor,
@@ -399,6 +462,13 @@ export default function ThemePreviewChart({
         gridColor: axisGrid,
         domainColor: axisGrid,
         tickColor: axisGrid,
+        tickCount: axisTickCount,
+        gridDash: axisGridDash,
+        tickDash: axisTickDash,
+        domainDash: axisDomainDash,
+        gridWidth: axisGridWidth,
+        tickWidth: axisTickWidth,
+        domainWidth: axisDomainWidth,
       },
       title: {
         color: titleTypography.fontColor,
@@ -442,6 +512,7 @@ export default function ThemePreviewChart({
       tooltipTheme={getTooltipTheme(pageBackground)}
       cardBackground={uiTheme.cardBackground}
       cardShadow={uiTheme.cardShadow}
+      cardBorderRadius={chartCardBorderRadius}
       tooltipStyle={{
         fillColor: tooltipCardBackground,
         fontFamily: tooltipTypography.fontFamily,

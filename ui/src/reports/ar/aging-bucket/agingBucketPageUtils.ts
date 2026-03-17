@@ -3,7 +3,7 @@ import type {
   CanvasSizeMode,
   ChartPackMetadata,
   ThemeOption,
-} from './components/ARAgingBucketChart';
+} from './types';
 import type { BucketCombinator, BucketOperator } from './bucketEditorEngine';
 
 export const OPERATOR_OPTIONS: BucketOperator[] = ['=', '<>', '>=', '<=', '>', '<'];
@@ -219,119 +219,11 @@ export function parseCanvasSizeOptionsFromMetadata(metadata: ChartPackMetadata |
   return parsed;
 }
 
-export function getTodayIsoDate() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-export function isValidIsoDate(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return false;
-  }
-
-  const parsed = new Date(`${value}T00:00:00Z`);
-  if (Number.isNaN(parsed.getTime())) {
-    return false;
-  }
-
-  return parsed.toISOString().slice(0, 10) === value;
-}
-
 export function formatBucketRule(bucket: AgingBucketDef) {
   const conditionText = bucket.conditions
     .map((condition) => `${condition.operator} ${condition.value}`)
     .join(` ${bucket.combinator} `);
   return `${bucket.name}: ${conditionText}`;
-}
-
-export type LocaleDateMeta = {
-  order: Array<'day' | 'month' | 'year'>;
-  placeholder: string;
-};
-
-export function getLocaleDateMeta(): LocaleDateMeta {
-  const formatter = new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
-  const parts = formatter.formatToParts(new Date(Date.UTC(2001, 10, 22)));
-  const order = parts
-    .filter((part) => part.type === 'day' || part.type === 'month' || part.type === 'year')
-    .map((part) => part.type) as Array<'day' | 'month' | 'year'>;
-
-  const placeholder = parts
-    .map((part) => {
-      if (part.type === 'day') {
-        return 'dd';
-      }
-      if (part.type === 'month') {
-        return 'mm';
-      }
-      if (part.type === 'year') {
-        return 'yyyy';
-      }
-      return part.value;
-    })
-    .join('');
-
-  return {
-    order: order.length === 3 ? order : ['year', 'month', 'day'],
-    placeholder,
-  };
-}
-
-export function formatIsoDateForLocale(isoDate: string) {
-  if (!isValidIsoDate(isoDate)) {
-    return isoDate;
-  }
-
-  const [year, month, day] = isoDate.split('-').map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(date);
-}
-
-export function parseLocaleDateToIso(input: string, meta: LocaleDateMeta): string | null {
-  const trimmed = input.trim();
-  if (!trimmed) {
-    return null;
-  }
-
-  if (isValidIsoDate(trimmed)) {
-    return trimmed;
-  }
-
-  const numbers = trimmed.match(/\d+/g);
-  if (!numbers || numbers.length !== 3) {
-    return null;
-  }
-
-  const map: Record<'day' | 'month' | 'year', number> = {
-    day: 0,
-    month: 0,
-    year: 0,
-  };
-
-  meta.order.forEach((part, index) => {
-    map[part] = Number(numbers[index]);
-  });
-
-  let year = map.year;
-  if (year < 100) {
-    year += 2000;
-  }
-
-  const month = map.month;
-  const day = map.day;
-  const iso = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  return isValidIsoDate(iso) ? iso : null;
 }
 
 export function loadStoredBuckets(options: {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { AgingBucketDef } from '../components/ARAgingBucketChart';
+import type { AgingBucketDef } from '../types';
 import type { BucketDraft, ValidationSuggestionItem } from '../bucketEditorEngine';
 
 export type NameSuggestionDialogState = {

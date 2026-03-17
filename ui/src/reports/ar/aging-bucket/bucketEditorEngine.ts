@@ -1,4 +1,4 @@
-import type { AgingBucketDef } from './components/ARAgingBucketChart';
+import type { AgingBucketDef } from './types';
 
 export type BucketOperator = '=' | '<>' | '>=' | '<=' | '>' | '<';
 export type BucketCombinator = 'AND' | 'OR';
