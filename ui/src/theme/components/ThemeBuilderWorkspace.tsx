@@ -2,387 +2,26 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ColorStudioToken, StyleStudioToken, ThemeSaveDraft, ThemeBuilderUiTheme } from '../types';
 import { hexToRgb, normalizeHexColor, rgbToHex } from '../utils';
 import ThemePreviewChart from './ThemePreviewChart';
-
-const FONT_FAMILY_OPTIONS = [
-  { value: 'Helvetica, Arial, sans-serif', label: 'Helvetica (Default)' },
-  { value: 'Arial, sans-serif', label: 'Arial' },
-  { value: 'Segoe UI, Tahoma, sans-serif', label: 'Segoe UI' },
-  { value: 'Georgia, serif', label: 'Georgia' },
-  { value: 'Times New Roman, Times, serif', label: 'Times New Roman' },
-  { value: 'Courier New, Courier, monospace', label: 'Courier New' },
-  { value: 'Trebuchet MS, sans-serif', label: 'Trebuchet MS' },
-];
-
-const TYPOGRAPHY_OVERRIDE_SECTIONS = [
-  {
-    key: 'title',
-    label: 'Chart Title',
-    description: 'Overrides the main chart title above the preview.',
-  },
-  {
-    key: 'legend',
-    label: 'Legend',
-    description: 'Overrides legend labels and the legend title.',
-  },
-  {
-    key: 'axis',
-    label: 'Axis',
-    description: 'Overrides axis labels and axis titles.',
-  },
-  {
-    key: 'barLabel',
-    label: 'Bar Labels',
-    description: 'Overrides the numeric labels drawn above the bars.',
-  },
-  {
-    key: 'tooltip',
-    label: 'Tooltip',
-    description: 'Controls the preview tooltip card shown under the chart.',
-  },
-] as const;
-
-const TYPOGRAPHY_BASE_SUFFIXES = [
-  'FontFamily',
-  'FontWeight',
-  'FontStyle',
-  'FontSize',
-  'FontColor',
-] as const;
-
-const TYPOGRAPHY_SHARED_SUFFIXES = [
-  ...TYPOGRAPHY_BASE_SUFFIXES,
-  'TextRenderMode',
-  'TextStrokeColor',
-  'TextStrokeWidth',
-] as const;
-
-const TOOLTIP_SURFACE_SUFFIXES = [
-  'BackgroundColor',
-  'BorderColor',
-  'BorderWidth',
-  'Padding',
-] as const;
-
-const STYLE_ENUM_OPTIONS: Record<string, Array<{ value: string; label: string }>> = {
-  legendOrient: [
-    { value: 'left', label: 'Left' },
-    { value: 'right', label: 'Right' },
-    { value: 'top', label: 'Top' },
-    { value: 'bottom', label: 'Bottom' },
-    { value: 'top-left', label: 'Top Left' },
-    { value: 'top-right', label: 'Top Right' },
-    { value: 'bottom-left', label: 'Bottom Left' },
-    { value: 'bottom-right', label: 'Bottom Right' },
-  ],
-  axisLabelOverlapStrategy: [
-    { value: 'parity', label: 'Parity' },
-    { value: 'greedy', label: 'Greedy' },
-    { value: 'none', label: 'None' },
-  ],
-  axisGridDashStyle: [
-    { value: 'solid', label: 'Solid' },
-    { value: 'dotted', label: 'Dotted' },
-    { value: 'dashed', label: 'Dashed' },
-  ],
-  axisDomainDashStyle: [
-    { value: 'solid', label: 'Solid' },
-    { value: 'dotted', label: 'Dotted' },
-    { value: 'dashed', label: 'Dashed' },
-  ],
-  axisTickDashStyle: [
-    { value: 'solid', label: 'Solid' },
-    { value: 'dotted', label: 'Dotted' },
-    { value: 'dashed', label: 'Dashed' },
-  ],
-  referenceLineDashStyle: [
-    { value: 'solid', label: 'Solid' },
-    { value: 'dotted', label: 'Dotted' },
-    { value: 'dashed', label: 'Dashed' },
-  ],
-  chartLineInterpolate: [
-    { value: 'linear', label: 'Linear' },
-    { value: 'step', label: 'Step' },
-    { value: 'step-after', label: 'Step After' },
-    { value: 'step-before', label: 'Step Before' },
-    { value: 'basis', label: 'Basis' },
-    { value: 'cardinal', label: 'Cardinal' },
-    { value: 'monotone', label: 'Monotone' },
-  ],
-  chartPointShape: [
-    { value: 'circle', label: 'Circle' },
-    { value: 'square', label: 'Square' },
-    { value: 'cross', label: 'Cross' },
-    { value: 'diamond', label: 'Diamond' },
-    { value: 'triangle-up', label: 'Triangle Up' },
-    { value: 'triangle-down', label: 'Triangle Down' },
-  ],
-};
-
-const STYLE_TOGGLE_KEYS = new Set(['xAxisGridEnabled', 'yAxisGridEnabled']);
-
-type ChartControlField =
-  | {
-      key: string;
-      label: string;
-      type: 'number';
-      min?: number;
-      max?: number;
-      step?: number;
-    }
-  | {
-      key: string;
-      label: string;
-      type: 'color';
-    }
-  | {
-      key: string;
-      label: string;
-      type: 'select';
-      options: Array<{ value: string; label: string }>;
-    }
-  | {
-      key: string;
-      label: string;
-      type: 'toggle';
-    };
-
-const CHART_CONTROL_GROUPS: Array<{
-  key: string;
-  label: string;
-  description: string;
-  fields: ChartControlField[];
-}> = [
-  {
-    key: 'legend',
-    label: 'Legend',
-    description: 'Legend symbol size, spacing, and orientation.',
-    fields: [
-      { key: 'legendSymbolSize', label: 'Symbol Size', type: 'number', min: 0, step: 1 },
-      { key: 'legendSymbolStrokeWidth', label: 'Symbol Stroke Width', type: 'number', min: 0, step: 0.5 },
-      { key: 'legendLabelLimit', label: 'Label Limit', type: 'number', min: 0, step: 1 },
-      { key: 'legendRowPadding', label: 'Row Padding', type: 'number', min: 0, step: 1 },
-      { key: 'legendColumnPadding', label: 'Column Padding', type: 'number', min: 0, step: 1 },
-      {
-        key: 'legendOrient',
-        label: 'Orientation',
-        type: 'select',
-        options: STYLE_ENUM_OPTIONS.legendOrient,
-      },
-    ],
-  },
-  {
-    key: 'axis',
-    label: 'Axis & Grid',
-    description: 'Tick interval, label layout, and per-axis grid visibility.',
-    fields: [
-      { key: 'axisTickCount', label: 'Tick Count', type: 'number', min: 1, step: 1 },
-      { key: 'axisLabelAngle', label: 'Label Angle', type: 'number', min: -180, max: 180, step: 1 },
-      { key: 'axisLabelLimit', label: 'Label Limit', type: 'number', min: 0, step: 1 },
-      { key: 'axisLabelPadding', label: 'Label Padding', type: 'number', min: 0, step: 1 },
-      {
-        key: 'axisLabelOverlapStrategy',
-        label: 'Overlap Strategy',
-        type: 'select',
-        options: STYLE_ENUM_OPTIONS.axisLabelOverlapStrategy,
-      },
-      { key: 'axisNumberFormat', label: 'Number Format', type: 'select', options: [{ value: ',.2f', label: 'Default (,.2f)' }, { value: ',.0f', label: 'Integer (,.0f)' }, { value: '$,.2f', label: 'Currency ($,.2f)' }] },
-      { key: 'axisDateFormat', label: 'Date Format', type: 'select', options: [{ value: '%Y-%m-%d', label: 'YYYY-MM-DD' }, { value: '%b %d, %Y', label: 'Mon DD, YYYY' }, { value: '%m/%d/%Y', label: 'MM/DD/YYYY' }] },
-      { key: 'xAxisGridEnabled', label: 'X Axis Grid', type: 'toggle' },
-      { key: 'yAxisGridEnabled', label: 'Y Axis Grid', type: 'toggle' },
-      { key: 'axisGridWidth', label: 'Grid Width', type: 'number', min: 0, step: 0.5 },
-      { key: 'axisTickWidth', label: 'Tick Width', type: 'number', min: 0, step: 0.5 },
-      { key: 'axisDomainWidth', label: 'Domain Width', type: 'number', min: 0, step: 0.5 },
-      {
-        key: 'axisGridDashStyle',
-        label: 'Grid Dash Style',
-        type: 'select',
-        options: STYLE_ENUM_OPTIONS.axisGridDashStyle,
-      },
-      {
-        key: 'axisTickDashStyle',
-        label: 'Tick Dash Style',
-        type: 'select',
-        options: STYLE_ENUM_OPTIONS.axisTickDashStyle,
-      },
-      {
-        key: 'axisDomainDashStyle',
-        label: 'Domain Dash Style',
-        type: 'select',
-        options: STYLE_ENUM_OPTIONS.axisDomainDashStyle,
-      },
-    ],
-  },
-  {
-    key: 'series',
-    label: 'Line/Point/Area',
-    description: 'Series shape and interpolation settings.',
-    fields: [
-      { key: 'chartLineStrokeColor', label: 'Line Stroke', type: 'color' },
-      { key: 'chartLineFillColor', label: 'Line Fill', type: 'color' },
-      { key: 'chartLineStrokeWidth', label: 'Line Width', type: 'number', min: 0, step: 0.5 },
-      { key: 'chartAreaOpacity', label: 'Area Opacity', type: 'number', min: 0, max: 1, step: 0.05 },
-      {
-        key: 'chartLineInterpolate',
-        label: 'Interpolation',
-        type: 'select',
-        options: STYLE_ENUM_OPTIONS.chartLineInterpolate,
-      },
-      { key: 'chartLinePointFillColor', label: 'Point Fill', type: 'color' },
-      { key: 'chartLinePointStrokeColor', label: 'Point Stroke', type: 'color' },
-      { key: 'chartLinePointStrokeWidth', label: 'Point Stroke Width', type: 'number', min: 0, step: 0.5 },
-      { key: 'chartPointSize', label: 'Point Size', type: 'number', min: 0, step: 1 },
-      { key: 'chartPointOpacity', label: 'Point Opacity', type: 'number', min: 0, max: 1, step: 0.05 },
-      {
-        key: 'chartPointShape',
-        label: 'Point Shape',
-        type: 'select',
-        options: STYLE_ENUM_OPTIONS.chartPointShape,
-      },
-    ],
-  },
-  {
-    key: 'reference',
-    label: 'Reference Line',
-    description: 'Threshold/reference line appearance.',
-    fields: [
-      { key: 'referenceLineColor', label: 'Line Color', type: 'color' },
-      { key: 'referenceLineWidth', label: 'Line Width', type: 'number', min: 0, step: 0.5 },
-      {
-        key: 'referenceLineDashStyle',
-        label: 'Dash Style',
-        type: 'select',
-        options: STYLE_ENUM_OPTIONS.referenceLineDashStyle,
-      },
-      { key: 'referenceLineLabelColor', label: 'Label Color', type: 'color' },
-      { key: 'referenceLineLabelFontSize', label: 'Label Font Size', type: 'number', min: 1, step: 1 },
-    ],
-  },
-  {
-    key: 'interaction',
-    label: 'Interaction States',
-    description: 'Selected, muted, and inactive series state styling.',
-    fields: [
-      { key: 'chartSeriesSelectedColor', label: 'Selected Color', type: 'color' },
-      { key: 'chartSeriesSelectedOpacity', label: 'Selected Opacity', type: 'number', min: 0, max: 1, step: 0.05 },
-      { key: 'chartSeriesMutedColor', label: 'Muted Color', type: 'color' },
-      { key: 'chartSeriesMutedOpacity', label: 'Muted Opacity', type: 'number', min: 0, max: 1, step: 0.05 },
-      { key: 'chartSeriesInactiveOpacity', label: 'Inactive Opacity', type: 'number', min: 0, max: 1, step: 0.05 },
-    ],
-  },
-];
-
-type TypographySettings = {
-  fontFamily: string;
-  fontStyle: 'normal' | 'italic';
-  fontWeight: 'normal' | 'bold';
-  fontSize: number;
-  fontColor: string;
-  textRenderMode: 'fill' | 'hollow';
-  textStrokeColor: string;
-  textStrokeWidth: number;
-};
-
-function getTypographySettingKey(prefix: string | null, suffix: string) {
-  return prefix ? `${prefix}${suffix}` : `${suffix.charAt(0).toLowerCase()}${suffix.slice(1)}`;
-}
-
-function getUiStringValue(
-  editableThemeUi: Record<string, unknown> | null,
-  key: string,
-  fallback: string
-) {
-  const value = editableThemeUi?.[key];
-  return typeof value === 'string' && value.trim() ? value : fallback;
-}
-
-function getUiNumberValue(
-  editableThemeUi: Record<string, unknown> | null,
-  key: string,
-  fallback: number
-) {
-  const value = editableThemeUi?.[key];
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-}
-
-function getUiColorValue(
-  editableThemeUi: Record<string, unknown> | null,
-  key: string,
-  fallback: string
-) {
-  const value = editableThemeUi?.[key];
-  return typeof value === 'string' && normalizeHexColor(value) ? normalizeHexColor(value)! : fallback;
-}
-
-function resolveTypographySettings(
-  editableThemeUi: Record<string, unknown> | null,
-  prefix: string | null,
-  fallback?: TypographySettings
-): TypographySettings {
-  return {
-    fontFamily: getUiStringValue(
-      editableThemeUi,
-      getTypographySettingKey(prefix, 'FontFamily'),
-      fallback?.fontFamily ?? 'Helvetica, Arial, sans-serif'
-    ),
-    fontStyle:
-      getUiStringValue(
-        editableThemeUi,
-        getTypographySettingKey(prefix, 'FontStyle'),
-        fallback?.fontStyle ?? 'normal'
-      ) === 'italic'
-        ? 'italic'
-        : 'normal',
-    fontWeight:
-      getUiStringValue(
-        editableThemeUi,
-        getTypographySettingKey(prefix, 'FontWeight'),
-        fallback?.fontWeight ?? 'normal'
-      ) === 'bold'
-        ? 'bold'
-        : 'normal',
-    fontSize: getUiNumberValue(
-      editableThemeUi,
-      getTypographySettingKey(prefix, 'FontSize'),
-      fallback?.fontSize ?? 12
-    ),
-    fontColor: getUiColorValue(
-      editableThemeUi,
-      getTypographySettingKey(prefix, 'FontColor'),
-      fallback?.fontColor ?? '#111827'
-    ),
-    textRenderMode:
-      getUiStringValue(
-        editableThemeUi,
-        getTypographySettingKey(prefix, 'TextRenderMode'),
-        fallback?.textRenderMode ?? 'fill'
-      ) === 'hollow'
-        ? 'hollow'
-        : 'fill',
-    textStrokeColor: getUiColorValue(
-      editableThemeUi,
-      getTypographySettingKey(prefix, 'TextStrokeColor'),
-      fallback?.textStrokeColor ?? '#111827'
-    ),
-    textStrokeWidth: getUiNumberValue(
-      editableThemeUi,
-      getTypographySettingKey(prefix, 'TextStrokeWidth'),
-      fallback?.textStrokeWidth ?? 1.2
-    ),
-  };
-}
-
-const MANAGED_TYPOGRAPHY_STYLE_KEYS = new Set<string>([
-  ...TYPOGRAPHY_SHARED_SUFFIXES.map((suffix) => getTypographySettingKey(null, suffix)),
-  ...TYPOGRAPHY_OVERRIDE_SECTIONS.flatMap((section) =>
-    TYPOGRAPHY_BASE_SUFFIXES.map((suffix) => getTypographySettingKey(section.key, suffix))
-  ),
-]);
-
-const MANAGED_WIDTH_STYLE_KEYS = new Set<string>([
-  ...TOOLTIP_SURFACE_SUFFIXES.filter((suffix) => suffix === 'BorderWidth' || suffix === 'Padding').map(
-    (suffix) => getTypographySettingKey('tooltip', suffix)
-  ),
-]);
+import ThemeStyleTokenControl from './ThemeStyleTokenControl';
+import ThemeChartControlField from './ThemeChartControlField';
+import { useThemeBuilderTokenFolders } from '../hooks/useThemeBuilderTokenFolders';
+import {
+  CHART_CONTROL_GROUPS,
+  FONT_FAMILY_OPTIONS,
+  MANAGED_TYPOGRAPHY_STYLE_KEYS,
+  MANAGED_WIDTH_STYLE_KEYS,
+  STYLE_ENUM_OPTIONS,
+  STYLE_TOGGLE_KEYS,
+  TOOLTIP_SURFACE_SUFFIXES,
+  TYPOGRAPHY_BASE_SUFFIXES,
+  TYPOGRAPHY_OVERRIDE_SECTIONS,
+  getTypographySettingKey,
+  getUiColorValue,
+  getUiNumberValue,
+  getUiStringValue,
+  resolveTypographySettings,
+  type TypographySettings,
+} from './themeBuilderWorkspaceConfig';
 
 type ThemeBuilderWorkspaceProps = {
   uiTheme: ThemeBuilderUiTheme;
@@ -450,9 +89,9 @@ export default function ThemeBuilderWorkspace({
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
   const [themeType, setThemeType] = useState<'all' | 'monocolor' | 'adjacent' | 'diverging'>('all');
   const [themeTone, setThemeTone] = useState<'all' | 'light' | 'dark'>('all');
-  const [isThemeElementsExpanded, setIsThemeElementsExpanded] = useState(false);
   const [isWidthsSectionExpanded, setIsWidthsSectionExpanded] = useState(false);
   const [isTypographySectionExpanded, setIsTypographySectionExpanded] = useState(false);
+  const [isChartControlsSectionExpanded, setIsChartControlsSectionExpanded] = useState(false);
   const [isColorsSectionExpanded, setIsColorsSectionExpanded] = useState(false);
   const [expandedTypographyOverrides, setExpandedTypographyOverrides] = useState<Record<string, boolean>>({
     title: false,
@@ -475,71 +114,11 @@ export default function ThemeBuilderWorkspace({
     [colorStudioTokens, editorTokenPath]
   );
 
-  const filteredTokens = useMemo(() => {
-    const isCoreToken = (text: string) =>
-      /page|card|button|text|background|border|hover|font|modal|shadow/.test(text);
-    const isStatusToken = (text: string) => /status|danger|success|warning|error/.test(text);
-    const isChartToken = (text: string) => /chart|bar|stroke|palette|overlap|tooltip/.test(text);
-
-    return colorStudioTokens.filter((token) => {
-      const haystack = `${token.pathText} ${token.label}`.toLowerCase();
-
-      let typeMatch = true;
-      if (themeType === 'monocolor') {
-        typeMatch = isCoreToken(haystack) || /default color|hover color/.test(haystack);
-      } else if (themeType === 'adjacent') {
-        typeMatch = isCoreToken(haystack) || isChartToken(haystack);
-      } else if (themeType === 'diverging') {
-        typeMatch = isCoreToken(haystack) || isChartToken(haystack) || isStatusToken(haystack);
-      }
-
-      if (!typeMatch) {
-        return false;
-      }
-
-      if (themeTone !== 'all') {
-        const hasLightWord = /\blight\b/.test(haystack);
-        const hasDarkWord = /\bdark\b/.test(haystack);
-        if (themeTone === 'light' && hasDarkWord && !hasLightWord) {
-          return false;
-        }
-        if (themeTone === 'dark' && hasLightWord && !hasDarkWord) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [colorStudioTokens, themeType, themeTone]);
-
-  const tokenFolders = useMemo(() => {
-    const toLabel = (value: string) =>
-      value
-        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-        .replace(/[_-]+/g, ' ')
-        .replace(/\s+/g, ' ')
-        .replace(/^./, (char) => char.toUpperCase());
-
-    const grouped = new Map<string, { label: string; tokens: ColorStudioToken[] }>();
-    for (const token of filteredTokens) {
-      const root = typeof token.path[0] === 'string' ? token.path[0] : 'misc';
-      const existing = grouped.get(root);
-      if (existing) {
-        existing.tokens.push(token);
-      } else {
-        grouped.set(root, {
-          label: toLabel(root),
-          tokens: [token],
-        });
-      }
-    }
-
-    return Array.from(grouped.entries()).map(([key, value]) => ({
-      key,
-      label: value.label,
-      tokens: value.tokens,
-    }));
-  }, [filteredTokens]);
+  const { filteredTokens, tokenFolders } = useThemeBuilderTokenFolders(
+    colorStudioTokens,
+    themeType,
+    themeTone
+  );
 
   const widthStyleTokens = useMemo(
     () =>
@@ -1075,235 +654,12 @@ export default function ThemeBuilderWorkspace({
     );
   };
 
-  const renderStyleTokenControl = (token: StyleStudioToken) => {
-    const fieldStyle = {
-      display: 'grid',
-      gap: 6,
-      fontSize: 12,
-      fontWeight: 600,
-    } as const;
-    const inputStyle = {
-      border: '1px solid',
-      borderColor: uiTheme.buttonBorder,
-      borderRadius: 6,
-      padding: '6px 8px',
-      background: uiTheme.buttonBackground,
-      color: uiTheme.buttonText,
-      fontSize: 12,
-    } as const;
-
-    const draftValue = styleDraftByToken[token.pathText] ?? String(token.value);
-    const enumOptions = STYLE_ENUM_OPTIONS[token.pathText];
-
-    if (enumOptions) {
-      const safeValue = enumOptions.some((option) => option.value === draftValue)
-        ? draftValue
-        : enumOptions[0].value;
-
-      return (
-        <label
-          key={token.pathText}
-          style={fieldStyle}
-        >
-          <span>{token.label}</span>
-          <select
-            value={safeValue}
-            onChange={(event) => {
-              const next = event.target.value;
-              setStyleDraftByToken((current) => ({
-                ...current,
-                [token.pathText]: next,
-              }));
-              onApplyStyleValueForToken(token.pathText, next);
-            }}
-            style={inputStyle}
-          >
-            {enumOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      );
-    }
-
-    if (STYLE_TOGGLE_KEYS.has(token.pathText)) {
-      const checked = draftValue === '1' || draftValue.toLowerCase() === 'true';
-
-      return (
-        <label
-          key={token.pathText}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 10,
-            fontSize: 12,
-            fontWeight: 600,
-            border: '1px solid',
-            borderColor: uiTheme.buttonBorder,
-            borderRadius: 6,
-            padding: '8px 10px',
-            background: uiTheme.buttonBackground,
-          }}
-        >
-          <span>{token.label}</span>
-          <input
-            type="checkbox"
-            checked={checked}
-            onChange={(event) => {
-              const next = event.target.checked ? '1' : '0';
-              setStyleDraftByToken((current) => ({
-                ...current,
-                [token.pathText]: next,
-              }));
-              onApplyStyleValueForToken(token.pathText, next);
-            }}
-          />
-        </label>
-      );
-    }
-
-    return (
-      <label
-        key={token.pathText}
-        style={fieldStyle}
-      >
-        <span>{token.label}</span>
-        <input
-          type={token.valueType === 'number' ? 'number' : 'text'}
-          step={token.valueType === 'number' ? '0.1' : undefined}
-          value={draftValue}
-          onChange={(event) =>
-            setStyleDraftByToken((current) => ({
-              ...current,
-              [token.pathText]: event.target.value,
-            }))
-          }
-          onBlur={() =>
-            onApplyStyleValueForToken(
-              token.pathText,
-              styleDraftByToken[token.pathText] ?? String(token.value)
-            )
-          }
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.currentTarget.blur();
-            }
-          }}
-          style={inputStyle}
-        />
-      </label>
-    );
-  };
-
   const getSettingNumber = (key: string, fallback = 0) =>
     getUiNumberValue(editableThemeUi, key, fallback);
   const getSettingString = (key: string, fallback = '') =>
     getUiStringValue(editableThemeUi, key, fallback);
   const getSettingColor = (key: string, fallback = '#000000') =>
     getUiColorValue(editableThemeUi, key, fallback);
-
-  const renderChartControlField = (field: ChartControlField) => {
-    const commonInputStyle = {
-      border: '1px solid',
-      borderColor: uiTheme.buttonBorder,
-      borderRadius: 6,
-      padding: '6px 8px',
-      background: uiTheme.buttonBackground,
-      color: uiTheme.buttonText,
-      fontSize: 12,
-      width: '100%',
-      boxSizing: 'border-box',
-    } as const;
-
-    if (field.type === 'number') {
-      return (
-        <label key={field.key} style={{ display: 'grid', gap: 6, fontSize: 12, fontWeight: 600 }}>
-          <span>{field.label}</span>
-          <input
-            type="number"
-            min={field.min}
-            max={field.max}
-            step={field.step ?? 1}
-            value={getSettingNumber(field.key, 0)}
-            onChange={(event) =>
-              onApplyUiSetting(field.key, Number.parseFloat(event.target.value) || 0)
-            }
-            style={commonInputStyle}
-          />
-        </label>
-      );
-    }
-
-    if (field.type === 'color') {
-      return (
-        <label key={field.key} style={{ display: 'grid', gap: 6, fontSize: 12, fontWeight: 600 }}>
-          <span>{field.label}</span>
-          <input
-            type="color"
-            value={getSettingColor(field.key, '#000000')}
-            onChange={(event) => onApplyUiSetting(field.key, event.target.value)}
-            style={{
-              border: '1px solid',
-              borderColor: uiTheme.buttonBorder,
-              borderRadius: 6,
-              padding: '2px',
-              background: uiTheme.buttonBackground,
-              height: 34,
-              width: 48,
-            }}
-          />
-        </label>
-      );
-    }
-
-    if (field.type === 'toggle') {
-      return (
-        <label
-          key={field.key}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 10,
-            fontSize: 12,
-            fontWeight: 600,
-            border: '1px solid',
-            borderColor: uiTheme.buttonBorder,
-            borderRadius: 6,
-            padding: '8px 10px',
-            background: uiTheme.buttonBackground,
-          }}
-        >
-          <span>{field.label}</span>
-          <input
-            type="checkbox"
-            checked={getSettingNumber(field.key, 0) > 0}
-            onChange={(event) => onApplyUiSetting(field.key, event.target.checked ? 1 : 0)}
-          />
-        </label>
-      );
-    }
-
-    return (
-      <label key={field.key} style={{ display: 'grid', gap: 6, fontSize: 12, fontWeight: 600 }}>
-        <span>{field.label}</span>
-        <select
-          value={getSettingString(field.key, field.options[0]?.value ?? '')}
-          onChange={(event) => onApplyUiSetting(field.key, event.target.value)}
-          style={commonInputStyle}
-        >
-          {field.options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-    );
-  };
 
   return (
     <div
@@ -1351,7 +707,7 @@ export default function ThemeBuilderWorkspace({
         .theme-builder-token-list {
           display: grid;
           gap: 8px;
-          height: auto;
+          height: 100%;
           min-height: 0;
           max-height: 100%;
           overflow: auto;
@@ -1606,32 +962,7 @@ export default function ThemeBuilderWorkspace({
               </span>
             </div>
             <div className="theme-builder-token-list">
-              <div
-                className="theme-builder-folder"
-                style={{ borderColor: uiTheme.buttonBorder }}
-              >
-                <button
-                  type="button"
-                  className="theme-builder-folder-header"
-                  onClick={() => setIsThemeElementsExpanded((current) => !current)}
-                  aria-expanded={isThemeElementsExpanded}
-                  style={{ background: uiTheme.buttonBackground, color: uiTheme.buttonText }}
-                >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
-                      {isThemeElementsExpanded ? '▾' : '▸'}
-                    </span>
-                    <span>Theme Elements</span>
-                  </span>
-                  <span style={{ opacity: 0.7 }}>{colorStudioTokens.length + styleStudioTokens.length}</span>
-                </button>
-                <div
-                  className="theme-builder-folder-body"
-                  style={{
-                    borderColor: uiTheme.buttonBorder,
-                    display: isThemeElementsExpanded ? 'grid' : 'none',
-                  }}
-                >
+              <div style={{ display: 'grid', gap: 8, minHeight: 0 }}>
                   <div
                     className="theme-builder-folder"
                     style={{ borderColor: uiTheme.buttonBorder }}
@@ -1656,6 +987,8 @@ export default function ThemeBuilderWorkspace({
                       style={{
                         borderColor: uiTheme.buttonBorder,
                         display: isTypographySectionExpanded ? 'grid' : 'none',
+                        maxHeight: 'min(48vh, 500px)',
+                        overflow: 'auto',
                       }}
                     >
                       <span style={{ fontSize: 11, opacity: 0.7 }}>
@@ -1837,7 +1170,23 @@ export default function ThemeBuilderWorkspace({
                             Additional typography tokens ({additionalTypographyStyleTokens.length})
                           </summary>
                           <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
-                            {additionalTypographyStyleTokens.map((token) => renderStyleTokenControl(token))}
+                            {additionalTypographyStyleTokens.map((token) => (
+                              <ThemeStyleTokenControl
+                                key={token.pathText}
+                                token={token}
+                                uiTheme={uiTheme}
+                                draftValue={styleDraftByToken[token.pathText] ?? String(token.value)}
+                                enumOptions={STYLE_ENUM_OPTIONS[token.pathText]}
+                                isToggle={STYLE_TOGGLE_KEYS.has(token.pathText)}
+                                onDraftValueChange={(next) =>
+                                  setStyleDraftByToken((current) => ({
+                                    ...current,
+                                    [token.pathText]: next,
+                                  }))
+                                }
+                                onApplyValue={(next) => onApplyStyleValueForToken(token.pathText, next)}
+                              />
+                            ))}
                           </div>
                         </details>
                       ) : null}
@@ -1851,22 +1200,13 @@ export default function ThemeBuilderWorkspace({
                     <button
                       type="button"
                       className="theme-builder-folder-header"
-                      onClick={() =>
-                        setExpandedChartControlGroups((current) => {
-                          const nextExpanded = !Object.values(current).some(Boolean);
-                          const next: Record<string, boolean> = {};
-                          CHART_CONTROL_GROUPS.forEach((group) => {
-                            next[group.key] = nextExpanded;
-                          });
-                          return next;
-                        })
-                      }
-                      aria-expanded={Object.values(expandedChartControlGroups).some(Boolean)}
+                      onClick={() => setIsChartControlsSectionExpanded((current) => !current)}
+                      aria-expanded={isChartControlsSectionExpanded}
                       style={{ background: uiTheme.buttonBackground, color: uiTheme.buttonText }}
                     >
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
-                          {Object.values(expandedChartControlGroups).some(Boolean) ? '▾' : '▸'}
+                          {isChartControlsSectionExpanded ? '▾' : '▸'}
                         </span>
                         <span>Chart Controls</span>
                       </span>
@@ -1876,7 +1216,9 @@ export default function ThemeBuilderWorkspace({
                       className="theme-builder-folder-body"
                       style={{
                         borderColor: uiTheme.buttonBorder,
-                        display: Object.values(expandedChartControlGroups).some(Boolean) ? 'grid' : 'none',
+                        display: isChartControlsSectionExpanded ? 'grid' : 'none',
+                        maxHeight: 'min(48vh, 500px)',
+                        overflow: 'auto',
                       }}
                     >
                       <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
@@ -1972,7 +1314,17 @@ export default function ThemeBuilderWorkspace({
                                   alignItems: 'end',
                                 }}
                               >
-                                {group.fields.map((field) => renderChartControlField(field))}
+                                {group.fields.map((field) => (
+                                  <ThemeChartControlField
+                                    key={field.key}
+                                    field={field}
+                                    uiTheme={uiTheme}
+                                    getSettingNumber={getSettingNumber}
+                                    getSettingString={getSettingString}
+                                    getSettingColor={getSettingColor}
+                                    onApplyUiSetting={onApplyUiSetting}
+                                  />
+                                ))}
                               </div>
                             </div>
                           </div>
@@ -2005,6 +1357,8 @@ export default function ThemeBuilderWorkspace({
                       style={{
                         borderColor: uiTheme.buttonBorder,
                         display: isWidthsSectionExpanded ? 'grid' : 'none',
+                        maxHeight: 'min(40vh, 360px)',
+                        overflow: 'auto',
                       }}
                     >
                       {widthStyleTokens.length === 0 ? (
@@ -2014,7 +1368,23 @@ export default function ThemeBuilderWorkspace({
                           <span style={{ fontSize: 11, opacity: 0.7 }}>
                             Stroke, border, line width, corner radius, and opacity controls.
                           </span>
-                          {widthStyleTokens.map((token) => renderStyleTokenControl(token))}
+                          {widthStyleTokens.map((token) => (
+                            <ThemeStyleTokenControl
+                              key={token.pathText}
+                              token={token}
+                              uiTheme={uiTheme}
+                              draftValue={styleDraftByToken[token.pathText] ?? String(token.value)}
+                              enumOptions={STYLE_ENUM_OPTIONS[token.pathText]}
+                              isToggle={STYLE_TOGGLE_KEYS.has(token.pathText)}
+                              onDraftValueChange={(next) =>
+                                setStyleDraftByToken((current) => ({
+                                  ...current,
+                                  [token.pathText]: next,
+                                }))
+                              }
+                              onApplyValue={(next) => onApplyStyleValueForToken(token.pathText, next)}
+                            />
+                          ))}
                         </>
                       )}
                     </div>
@@ -2203,7 +1573,6 @@ export default function ThemeBuilderWorkspace({
                     </div>
                   </div>
                 </div>
-              </div>
             </div>
           </div>
 

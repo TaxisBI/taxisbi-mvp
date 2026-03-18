@@ -1,35 +1,6 @@
 import { CalendarRegular, SettingsRegular } from '@fluentui/react-icons';
-import type { RefObject } from 'react';
-import type { CanvasSizeMode, ResolvedUiTheme, ThemeOption } from '../types';
-
-type CanvasSizeOption = { value: CanvasSizeMode; label: string; displayOrder: number };
-
-type AgingBucketToolbarProps = {
-  uiTheme: ResolvedUiTheme;
-  isThemePopoverOpen: boolean;
-  themeButtonRef: RefObject<HTMLButtonElement | null>;
-  themePopoverRef: RefObject<HTMLDivElement | null>;
-  theme: string;
-  themeOptions: ThemeOption[];
-  formatThemeOptionLabel: (option: ThemeOption) => string;
-  canvasSizeMode: CanvasSizeMode;
-  canvasSizeOptions: CanvasSizeOption[];
-  onToggleThemePopover: () => void;
-  onSelectTheme: (themeKey: string) => void;
-  onCanvasSizeModeChange: (mode: CanvasSizeMode) => void;
-  onOpenThemeBuilder: () => void;
-  showReportDateControl: boolean;
-  showBucketCustomizerControl: boolean;
-  reportDateDraft: string;
-  reportDate: string;
-  reportDatePlaceholder: string;
-  reportDatePickerRef: RefObject<HTMLInputElement | null>;
-  onReportDateDraftChange: (value: string) => void;
-  onReportDateDraftBlur: () => void;
-  onReportDatePickerChange: (value: string) => void;
-  onOpenReportDatePicker: () => void;
-  onOpenBucketEditor: () => void;
-};
+import type { CanvasSizeMode } from '../types';
+import type { AgingBucketToolbarProps } from './agingBucketComponentProps.types';
 
 export default function AgingBucketToolbar({
   uiTheme,

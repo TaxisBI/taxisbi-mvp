@@ -1,42 +1,5 @@
 import { ArrowLeftRegular, ArrowRightRegular, CheckmarkRegular } from '@fluentui/react-icons';
-import type { RefObject } from 'react';
-import type { BucketDraft } from '../bucketEditorEngine';
-import type { NameSuggestionDialogState } from '../hooks/useBucketEditorState';
-import type { ResolvedUiTheme } from '../types';
-
-type BucketNameSuggestionDialogProps = {
-  isOpen: boolean;
-  nameSuggestionDialog: NameSuggestionDialogState | null;
-  nameSuggestionDialogRef: RefObject<HTMLDivElement | null>;
-  uiTheme: ResolvedUiTheme;
-  validationSuggestionPosition: number;
-  validationSuggestionCount: number;
-  validationSuggestionIndex: number;
-  bucketDraft: BucketDraft[];
-  activeSuggestionBounds: string;
-  nameSuggestionLabels: {
-    title: string;
-    subtitle: string;
-    boundsLabel: string;
-    currentLabel: string;
-    suggestedLabel: string;
-    customInputLabel: string;
-    backButton: string;
-    applyCustomNameButton: string;
-    useSuggestedButton: string;
-    keepCurrentButton: string;
-    enterNewNameButton: string;
-    previousButtonTitle: string;
-    nextButtonTitle: string;
-  };
-  onNavigateNameSuggestion: (delta: -1 | 1) => void;
-  onUpdateCustomNameDraft: (value: string) => void;
-  onBackToNameChoices: () => void;
-  onApplyCustomName: () => void;
-  onAcceptSuggestedName: (id: string) => void;
-  onKeepCurrentName: (id: string) => void;
-  onStartEnterCustomName: () => void;
-};
+import type { BucketNameSuggestionDialogProps } from './agingBucketComponentProps.types';
 
 export default function BucketNameSuggestionDialog({
   isOpen,

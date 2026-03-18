@@ -1,159 +1,72 @@
-import type { ReactNode, RefObject } from 'react';
-import type { BucketCombinator, BucketDraft, BucketOperator, OverlapMetadata } from '../bucketEditorEngine';
-import type { NameSuggestionDialogState } from '../hooks/useBucketEditorState';
-import type { CanvasSizeMode, ResolvedUiTheme, ThemeOption } from '../types';
+import type { AgingBucketPageLayoutProps } from './agingBucketPageLayout.types';
 import AgingBucketToolbar from './AgingBucketToolbar';
 import CustomCanvasDialog from './CustomCanvasDialog';
 import BucketEditorDialog from './BucketEditorDialog';
 import BucketNameSuggestionDialog from './BucketNameSuggestionDialog';
 
-type AgingBucketPageLayoutProps = {
-  uiTheme: ResolvedUiTheme;
-  pageMaxWidth: string | number;
-  themePopoverRef: RefObject<HTMLDivElement | null>;
-  themeButtonRef: RefObject<HTMLButtonElement | null>;
-  reportDatePickerRef: RefObject<HTMLInputElement | null>;
-  bucketDialogRef: RefObject<HTMLDivElement | null>;
-  canvasDialogRef: RefObject<HTMLDivElement | null>;
-  nameSuggestionDialogRef: RefObject<HTMLDivElement | null>;
-  theme: string;
-  themeOptions: ThemeOption[];
-  reportDate: string;
-  reportDateDraft: string;
-  reportDatePlaceholder: string;
-  canvasSizeMode: CanvasSizeMode;
-  canvasSizeOptions: Array<{ value: CanvasSizeMode; label: string; displayOrder: number }>;
-  customCanvasSize: { width: number; height: number };
-  customCanvasBounds: { minWidth: number; minHeight: number; maxWidth: number; maxHeight: number };
-  isThemePopoverOpen: boolean;
-  showReportDateControl: boolean;
-  showBucketCustomizerControl: boolean;
-  onToggleThemePopover: () => void;
-  onSelectTheme: (themeKey: string) => void;
-  onCanvasSizeModeChange: (mode: CanvasSizeMode) => void;
-  onOpenThemeBuilder: () => void;
-  onReportDateDraftChange: (value: string) => void;
-  onReportDateDraftBlur: () => void;
-  onReportDatePickerChange: (value: string) => void;
-  onOpenReportDatePicker: () => void;
-  onOpenBucketEditor: () => void;
-  formatThemeOptionLabel: (option: ThemeOption) => string;
-  appliedBucketSummary: string;
-  isCanvasDialogOpen: boolean;
-  customCanvasDraft: { width: string; height: string };
-  canvasDialogError: string | null;
-  onCanvasDraftChange: (patch: Partial<{ width: string; height: string }>) => void;
-  onCloseCustomCanvasDialog: () => void;
-  onApplyCustomCanvasSize: () => void;
-  isEditorOpen: boolean;
-  bucketDraft: BucketDraft[];
-  overlapMeta: OverlapMetadata;
-  dragBucketId: string | null;
-  validationPassed: boolean;
-  validatedBucketIds: Set<string>;
-  draftValidationError: string | null;
-  bucketError: string | null;
-  isDefaultBucketId: (id: string) => boolean;
-  effectiveOperatorOptions: BucketOperator[];
-  effectiveCombinatorOptions: BucketCombinator[];
-  operatorLabels: Record<BucketOperator, string>;
-  bucketEditorLabels: {
-    modalTitle: string;
-    modalHelperText: string;
-    addBucketButton: string;
-    restoreDefaultsButton: string;
-    validateButton: string;
-    cancelButton: string;
-    applyButton: string;
-    overlapErrorText: string;
-    validateBeforeApplyText: string;
-  };
-  onDragStart: (id: string) => void;
-  onDropReorder: (sourceId: string, targetId: string) => void;
-  onDragEnd: () => void;
-  onUpdateBucketDraftName: (id: string, value: string) => void;
-  onUpdateBucketSpecial: (id: string, isSpecial: boolean) => void;
-  onUpdateBucketCondition: (
-    id: string,
-    slot: 'primary' | 'secondary',
-    patch: Partial<{ operator: BucketOperator; value: string; enabled: boolean }>
-  ) => void;
-  onUpdateBucketCombinator: (id: string, combinator: BucketCombinator) => void;
-  onDeleteBucket: (id: string) => void;
-  onAddBucket: () => void;
-  onRestoreDefaultBuckets: () => void;
-  onRunValidation: () => void;
-  onCancelBucketEditor: () => void;
-  onApplyBucketChanges: () => void;
-  nameSuggestionDialog: NameSuggestionDialogState | null;
-  validationSuggestionPosition: number;
-  validationSuggestionCount: number;
-  validationSuggestionIndex: number;
-  activeSuggestionBounds: string;
-  nameSuggestionLabels: {
-    title: string;
-    subtitle: string;
-    boundsLabel: string;
-    currentLabel: string;
-    suggestedLabel: string;
-    customInputLabel: string;
-    backButton: string;
-    applyCustomNameButton: string;
-    useSuggestedButton: string;
-    keepCurrentButton: string;
-    enterNewNameButton: string;
-    previousButtonTitle: string;
-    nextButtonTitle: string;
-  };
-  onNavigateNameSuggestion: (delta: -1 | 1) => void;
-  onUpdateCustomNameDraft: (value: string) => void;
-  onBackToNameChoices: () => void;
-  onApplyCustomName: () => void;
-  onAcceptSuggestedName: (id: string) => void;
-  onKeepCurrentName: (id: string) => void;
-  onStartEnterCustomName: () => void;
-  onRenderChart: () => ReactNode;
-};
-
-export default function AgingBucketPageLayout(props: AgingBucketPageLayoutProps) {
+export default function AgingBucketPageLayout({
+  refs,
+  shell,
+  themeControls,
+  reportDateControls,
+  canvasControls,
+  bucketEditor,
+  nameSuggestion,
+  chart,
+}: AgingBucketPageLayoutProps) {
   const {
-    uiTheme,
-    pageMaxWidth,
     themePopoverRef,
     themeButtonRef,
     reportDatePickerRef,
     bucketDialogRef,
     canvasDialogRef,
     nameSuggestionDialogRef,
+  } = refs;
+
+  const {
+    uiTheme,
+    pageMaxWidth,
+    showReportDateControl,
+    showBucketCustomizerControl,
+    appliedBucketSummary,
+  } = shell;
+
+  const {
     theme,
     themeOptions,
+    isThemePopoverOpen,
+    onToggleThemePopover,
+    onSelectTheme,
+    onOpenThemeBuilder,
+    formatThemeOptionLabel,
+  } = themeControls;
+
+  const {
     reportDate,
     reportDateDraft,
     reportDatePlaceholder,
-    canvasSizeMode,
-    canvasSizeOptions,
-    customCanvasBounds,
-    isThemePopoverOpen,
-    showReportDateControl,
-    showBucketCustomizerControl,
-    onToggleThemePopover,
-    onSelectTheme,
-    onCanvasSizeModeChange,
-    onOpenThemeBuilder,
     onReportDateDraftChange,
     onReportDateDraftBlur,
     onReportDatePickerChange,
     onOpenReportDatePicker,
-    onOpenBucketEditor,
-    formatThemeOptionLabel,
-    appliedBucketSummary,
+  } = reportDateControls;
+
+  const {
+    canvasSizeMode,
+    canvasSizeOptions,
+    customCanvasBounds,
     isCanvasDialogOpen,
     customCanvasDraft,
     canvasDialogError,
+    onCanvasSizeModeChange,
     onCanvasDraftChange,
     onCloseCustomCanvasDialog,
     onApplyCustomCanvasSize,
-    isEditorOpen,
+  } = canvasControls;
+
+  const {
+    isOpen: isEditorOpen,
+    onOpenBucketEditor,
     bucketDraft,
     overlapMeta,
     dragBucketId,
@@ -179,6 +92,9 @@ export default function AgingBucketPageLayout(props: AgingBucketPageLayoutProps)
     onRunValidation,
     onCancelBucketEditor,
     onApplyBucketChanges,
+  } = bucketEditor;
+
+  const {
     nameSuggestionDialog,
     validationSuggestionPosition,
     validationSuggestionCount,
@@ -192,8 +108,9 @@ export default function AgingBucketPageLayout(props: AgingBucketPageLayoutProps)
     onAcceptSuggestedName,
     onKeepCurrentName,
     onStartEnterCustomName,
-    onRenderChart,
-  } = props;
+  } = nameSuggestion;
+
+  const { onRenderChart } = chart;
 
   return (
     <>

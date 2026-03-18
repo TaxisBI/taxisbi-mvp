@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AgingBucketDef } from './types';
 import AgingBucketPageLayout from './components/AgingBucketPageLayout';
 import {
@@ -8,12 +8,8 @@ import {
   hasStoredBuckets,
   loadStoredBuckets,
 } from './agingBucketPageUtils';
-import {
-  normalizeLegacyDefaultBucket,
-  type BucketCombinator,
-  type BucketOperator,
-} from './bucketEditorEngine';
-import { useBucketEditorState, type NameSuggestionDialogState } from './hooks/useBucketEditorState';
+import { normalizeLegacyDefaultBucket } from './bucketEditorEngine';
+import { useBucketEditorState } from './hooks/useBucketEditorState';
 import { useBucketEditorActions } from './hooks/useBucketEditorActions';
 import { useAgingBucketUiState } from './hooks/useAgingBucketUiState';
 import { useDismissLayer } from './hooks/useDismissLayer';
@@ -24,16 +20,7 @@ import { useAgingBucketPresentation } from './hooks/useAgingBucketPresentation';
 import type { ThemeBuilderReportId } from '../../../theme/navigation';
 
 const BUCKET_STORAGE_KEY = 'taxisbi.ui.agingBuckets';
-
-let defaultBucketIds = new Set<string>();
-
-function setDefaultBucketIds(ids: string[]) {
-  defaultBucketIds = new Set(ids);
-}
-
-function isDefaultBucketId(id: string) {
-  return defaultBucketIds.has(id);
-}
+const AGING_REPORT_ID = 'ar-aging' as const;
 
 type ARAgingBucketPageProps = {
   onOpenThemeBuilder?: (reportId: ThemeBuilderReportId) => void;
@@ -47,7 +34,24 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
   const canvasDialogRef = useRef<HTMLDivElement | null>(null);
   const nameSuggestionDialogRef = useRef<HTMLDivElement | null>(null);
   const suppressEditorCloseUntilRef = useRef(0);
+  const defaultBucketIdsRef = useRef<Set<string>>(new Set());
   const customCanvasBounds = getCustomCanvasBounds();
+
+  const setDefaultBucketIds = useCallback((ids: string[]) => {
+    defaultBucketIdsRef.current = new Set(ids);
+  }, []);
+
+  const isDefaultBucketId = useCallback((id: string) => {
+    return defaultBucketIdsRef.current.has(id);
+  }, []);
+
+  const onOpenAgingThemeBuilder = useCallback(
+    (reportId: typeof AGING_REPORT_ID) => {
+      onOpenThemeBuilder?.(reportId);
+    },
+    [onOpenThemeBuilder]
+  );
+
   const {
     theme,
     themeOptions,
@@ -78,9 +82,10 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
     openReportDatePicker,
   } = useAgingBucketUiState({
     customCanvasBounds,
-    onOpenThemeBuilder: onOpenThemeBuilder as ((reportId: 'ar-aging') => void) | undefined,
+    onOpenThemeBuilder: onOpenAgingThemeBuilder,
     reportDatePickerRef,
   });
+
   const [buckets, setBuckets] = useState<AgingBucketDef[]>(() =>
     loadStoredBuckets({
       storageKey: BUCKET_STORAGE_KEY,
@@ -89,6 +94,7 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
       normalizeLegacyDefaultBucket,
     })
   );
+
   const {
     isEditorOpen,
     bucketDraft,
@@ -112,6 +118,7 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
     openBucketEditor,
     closeBucketEditor,
   } = useBucketEditorState();
+
   const {
     chartContext,
     uiTheme,
@@ -132,6 +139,7 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
     canvasSizeMode,
     customCanvasSize,
   });
+
   const renderChart = useAgingBucketChartRender({
     chartContext,
     theme,
@@ -143,6 +151,7 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
     onUiThemeResolved: handleUiThemeResolved,
     onPackMetadataResolved: handlePackMetadataResolved,
   });
+
   const { operatorLabels, appliedBucketSummary } = useAgingBucketPresentation({
     buckets,
     effectiveOperatorOptions,
@@ -246,86 +255,101 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
 
   return (
     <AgingBucketPageLayout
-      uiTheme={uiTheme}
-      pageMaxWidth={pageMaxWidth}
-      themePopoverRef={themePopoverRef}
-      themeButtonRef={themeButtonRef}
-      reportDatePickerRef={reportDatePickerRef}
-      bucketDialogRef={bucketDialogRef}
-      canvasDialogRef={canvasDialogRef}
-      nameSuggestionDialogRef={nameSuggestionDialogRef}
-      theme={theme}
-      themeOptions={themeOptions}
-      reportDate={reportDate}
-      reportDateDraft={reportDateDraft}
-      reportDatePlaceholder={reportDatePlaceholder}
-      canvasSizeMode={canvasSizeMode}
-      canvasSizeOptions={canvasSizeOptions}
-      customCanvasSize={customCanvasSize}
-      customCanvasBounds={customCanvasBounds}
-      isThemePopoverOpen={isThemePopoverOpen}
-      showReportDateControl={showReportDateControl}
-      showBucketCustomizerControl={showBucketCustomizerControl}
-      onToggleThemePopover={toggleThemePopover}
-      onSelectTheme={handleThemeSelection}
-      onCanvasSizeModeChange={handleCanvasSizeModeChange}
-      onOpenThemeBuilder={handleOpenThemeBuilder}
-      onReportDateDraftChange={handleReportDateDraftChange}
-      onReportDateDraftBlur={handleReportDateDraftBlur}
-      onReportDatePickerChange={handleReportDatePickerChange}
-      onOpenReportDatePicker={openReportDatePicker}
-      onOpenBucketEditor={openBucketEditorModal}
-      formatThemeOptionLabel={formatThemeOptionLabel}
-      appliedBucketSummary={appliedBucketSummary}
-      isCanvasDialogOpen={isCanvasDialogOpen}
-      customCanvasDraft={customCanvasDraft}
-      canvasDialogError={canvasDialogError}
-      onCanvasDraftChange={(patch) => {
-        setCustomCanvasDraft((current) => ({ ...current, ...patch }));
-        setCanvasDialogError(null);
+      refs={{
+        themePopoverRef,
+        themeButtonRef,
+        reportDatePickerRef,
+        bucketDialogRef,
+        canvasDialogRef,
+        nameSuggestionDialogRef,
       }}
-      onCloseCustomCanvasDialog={closeCustomCanvasDialog}
-      onApplyCustomCanvasSize={applyCustomCanvasSize}
-      isEditorOpen={isEditorOpen}
-      bucketDraft={bucketDraft}
-      overlapMeta={overlapMeta}
-      dragBucketId={dragBucketId}
-      validationPassed={validationPassed}
-      validatedBucketIds={validatedBucketIds}
-      draftValidationError={draftValidationError}
-      bucketError={bucketError}
-      isDefaultBucketId={isDefaultBucketId}
-      effectiveOperatorOptions={effectiveOperatorOptions}
-      effectiveCombinatorOptions={effectiveCombinatorOptions}
-      operatorLabels={operatorLabels}
-      bucketEditorLabels={bucketEditorLabels}
-      onDragStart={handleDragStart}
-      onDropReorder={handleDropReorder}
-      onDragEnd={() => setDragBucketId(null)}
-      onUpdateBucketDraftName={updateBucketDraftName}
-      onUpdateBucketSpecial={updateBucketSpecial}
-      onUpdateBucketCondition={updateBucketCondition}
-      onUpdateBucketCombinator={updateBucketCombinator}
-      onDeleteBucket={deleteBucket}
-      onAddBucket={addBucket}
-      onRestoreDefaultBuckets={restoreDefaultBuckets}
-      onRunValidation={runValidation}
-      onCancelBucketEditor={closeBucketEditor}
-      onApplyBucketChanges={applyBucketChanges}
-      nameSuggestionDialog={nameSuggestionDialog}
-      validationSuggestionPosition={validationSuggestionPosition}
-      validationSuggestionCount={validationSuggestionCount}
-      validationSuggestionIndex={validationSuggestionIndex}
-      activeSuggestionBounds={activeSuggestionBounds}
-      nameSuggestionLabels={nameSuggestionLabels}
-      onNavigateNameSuggestion={navigateNameSuggestion}
-      onUpdateCustomNameDraft={updateCustomNameDraft}
-      onBackToNameChoices={backToNameChoices}
-      onApplyCustomName={applyCustomName}
-      onAcceptSuggestedName={acceptSuggestedName}
-      onKeepCurrentName={keepCurrentName}
-      onStartEnterCustomName={startEnterCustomName}
-      onRenderChart={renderChart}
+      shell={{
+        uiTheme,
+        pageMaxWidth,
+        showReportDateControl,
+        showBucketCustomizerControl,
+        appliedBucketSummary,
+      }}
+      themeControls={{
+        theme,
+        themeOptions,
+        isThemePopoverOpen,
+        onToggleThemePopover: toggleThemePopover,
+        onSelectTheme: handleThemeSelection,
+        onOpenThemeBuilder: handleOpenThemeBuilder,
+        formatThemeOptionLabel,
+      }}
+      reportDateControls={{
+        reportDate,
+        reportDateDraft,
+        reportDatePlaceholder,
+        onReportDateDraftChange: handleReportDateDraftChange,
+        onReportDateDraftBlur: handleReportDateDraftBlur,
+        onReportDatePickerChange: handleReportDatePickerChange,
+        onOpenReportDatePicker: openReportDatePicker,
+      }}
+      canvasControls={{
+        canvasSizeMode,
+        canvasSizeOptions,
+        customCanvasBounds,
+        isCanvasDialogOpen,
+        customCanvasDraft,
+        canvasDialogError,
+        onCanvasSizeModeChange: handleCanvasSizeModeChange,
+        onCanvasDraftChange: (patch) => {
+          setCustomCanvasDraft((current) => ({ ...current, ...patch }));
+          setCanvasDialogError(null);
+        },
+        onCloseCustomCanvasDialog: closeCustomCanvasDialog,
+        onApplyCustomCanvasSize: applyCustomCanvasSize,
+      }}
+      bucketEditor={{
+        isOpen: isEditorOpen,
+        onOpenBucketEditor: openBucketEditorModal,
+        bucketDraft,
+        overlapMeta,
+        dragBucketId,
+        validationPassed,
+        validatedBucketIds,
+        draftValidationError,
+        bucketError,
+        isDefaultBucketId,
+        effectiveOperatorOptions,
+        effectiveCombinatorOptions,
+        operatorLabels,
+        bucketEditorLabels,
+        onDragStart: handleDragStart,
+        onDropReorder: handleDropReorder,
+        onDragEnd: () => setDragBucketId(null),
+        onUpdateBucketDraftName: updateBucketDraftName,
+        onUpdateBucketSpecial: updateBucketSpecial,
+        onUpdateBucketCondition: updateBucketCondition,
+        onUpdateBucketCombinator: updateBucketCombinator,
+        onDeleteBucket: deleteBucket,
+        onAddBucket: addBucket,
+        onRestoreDefaultBuckets: restoreDefaultBuckets,
+        onRunValidation: runValidation,
+        onCancelBucketEditor: closeBucketEditor,
+        onApplyBucketChanges: applyBucketChanges,
+      }}
+      nameSuggestion={{
+        nameSuggestionDialog,
+        validationSuggestionPosition,
+        validationSuggestionCount,
+        validationSuggestionIndex,
+        activeSuggestionBounds,
+        nameSuggestionLabels,
+        onNavigateNameSuggestion: navigateNameSuggestion,
+        onUpdateCustomNameDraft: updateCustomNameDraft,
+        onBackToNameChoices: backToNameChoices,
+        onApplyCustomName: applyCustomName,
+        onAcceptSuggestedName: acceptSuggestedName,
+        onKeepCurrentName: keepCurrentName,
+        onStartEnterCustomName: startEnterCustomName,
+      }}
+      chart={{
+        onRenderChart: renderChart,
+      }}
     />
   );
 }
