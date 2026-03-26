@@ -1,0 +1,114 @@
+{
+  "autosize": {
+    "type": "fit-x",
+    "contains": "padding"
+  },
+  "width": 980,
+  "height": {
+    "step": 48
+  },
+  "config": {
+    "view": {
+      "stroke": null
+    },
+    "axis": {
+      "domain": false
+    }
+  },
+  "transform": [
+    {
+      "calculate": "datum.AgingBucket === 'Current' ? -1 : toNumber(replace(split(datum.AgingBucket, '-')[0], '+', ''))",
+      "as": "AgingBucketSort"
+    },
+    {
+      "calculate": "datum.Balance >= 1000000000 ? replace(format(datum.Balance / 1000000000, '.1f'), '.0', '') + 'b' : datum.Balance >= 1000000 ? replace(format(datum.Balance / 1000000, '.1f'), '.0', '') + 'm' : datum.Balance >= 1000 ? replace(format(datum.Balance / 1000, '.1f'), '.0', '') + 'k' : format(datum.Balance, '.0f')",
+      "as": "BalanceLabel"
+    }
+  ],
+  "layer": [
+    {
+      "params": [
+        {
+          "name": "barHoverLocal",
+          "select": {
+            "type": "point",
+            "fields": ["AgingBucket"],
+            "on": "mouseover",
+            "clear": "mouseout"
+          }
+        }
+      ],
+      "mark": {
+        "type": "bar",
+        "cornerRadiusEnd": 8
+      },
+      "encoding": {
+        "opacity": {
+          "condition": {
+            "param": "barHoverLocal",
+            "value": 1
+          },
+          "value": 0.72
+        }
+      }
+    },
+    {
+      "mark": {
+        "type": "text",
+        "align": "left",
+        "baseline": "middle",
+        "dx": 4
+      },
+      "encoding": {
+        "text": {
+          "field": "BalanceLabel",
+          "type": "nominal"
+        }
+      }
+    }
+  ],
+  "encoding": {
+    "x": {
+      "field": "Balance",
+      "type": "quantitative",
+      "title": "Receivable Balance",
+      "axis": {
+        "grid": true
+      }
+    },
+    "y": {
+      "field": "AgingBucket",
+      "type": "ordinal",
+      "scale": {
+        "paddingInner": 0.2,
+        "paddingOuter": 0.1
+      },
+      "sort": {
+        "field": "AgingBucketSort",
+        "op": "min",
+        "order": "ascending"
+      },
+      "axis": {
+        "ticks": false,
+        "tickSize": 0,
+        "labelPadding": 10,
+        "titleAngle": 0,
+        "titlePadding": 25
+      },
+      "title": "Bucket"
+    },
+    "tooltip": [
+      {
+        "field": "AgingBucket",
+        "type": "ordinal",
+        "title": "Bucket"
+      },
+      {
+        "field": "Balance",
+        "type": "quantitative",
+        "title": "Balance",
+        "format": "$,.2f"
+      }
+    ]
+  }
+}

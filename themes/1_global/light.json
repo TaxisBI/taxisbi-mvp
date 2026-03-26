@@ -1,0 +1,192 @@
+{
+  "key": "light",
+  "label": "Light",
+  "createdBy": "TaxisBI",
+  "displayOrder": 1,
+  "scope": "global",
+  "ui": {
+    "pageBackground": "#f8fafc",
+    "pageText": "#0f172a",
+    "cardBackground": "#ffffff",
+    "cardShadow": "0 8px 24px rgba(15, 23, 42, 0.08)",
+    "buttonBackground": "#ffffff",
+    "buttonText": "#0f172a",
+    "buttonBorder": "#cbd5e1",
+    "hoverColor": "#22c55e",
+    "fontFamily": "Helvetica, Arial, sans-serif",
+    "modalOverlayBackground": "rgba(15, 23, 42, 0.45)",
+    "statusDanger": "#dc2626",
+    "statusSuccess": "#16a34a",
+    "statusOnColor": "#ffffff",
+    "chartBarDefaultColor": "#4f46e5",
+    "chartBarHoverColor": "#22c55e",
+    "chartBarDefaultOpacity": 1,
+    "chartBarHoverOpacity": 1,
+    "chartBarDefaultStrokeColor": "#4f46e5",
+    "chartBarHoverStrokeColor": "#22c55e",
+    "chartBarDefaultStrokeOpacity": 1,
+    "chartBarHoverStrokeOpacity": 1,
+    "chartBarDefaultStrokeWidth": 1,
+    "chartBarHoverStrokeWidth": 4,
+    "chartCardBorderRadius": 12,
+    "chartViewCornerRadius": 6,
+    "chartBarCornerRadius": 6,
+    "chartRectCornerRadius": 6,
+    "chartLegendCornerRadius": 6,
+    "chartBarBandPaddingInner": 0.15,
+    "chartBarBandPaddingOuter": 0.1,
+    "chartBandPaddingInner": 0.15,
+    "chartBandPaddingOuter": 0.1,
+    "chartBarDiscreteBandSize": 20,
+    "chartBarContinuousBandSize": 6,
+    "chartLineStrokeColor": "#0ea5e9",
+    "chartLineFillColor": "#0ea5e9",
+    "chartLineStrokeWidth": 2,
+    "chartLinePointFillColor": "#0ea5e9",
+    "chartLinePointStrokeColor": "#ffffff",
+    "chartLinePointStrokeWidth": 1,
+    "titleFontFamily": "Helvetica, Arial, sans-serif",
+    "titleFontSize": 18,
+    "titleFontWeight": "600",
+    "titleFontStyle": "normal",
+    "titleFontColor": "#111827",
+    "axisTickCount": 6,
+    "axisGridDashStyle": "dashed",
+    "axisDomainDashStyle": "solid",
+    "axisTickDashStyle": "solid",
+    "axisGridWidth": 1,
+    "axisTickWidth": 1,
+    "axisDomainWidth": 1,
+    "legendSymbolSize": 140,
+    "legendSymbolStrokeWidth": 1,
+    "legendLabelLimit": 220,
+    "legendRowPadding": 4,
+    "legendColumnPadding": 12,
+    "legendOrient": "right",
+    "axisLabelAngle": 0,
+    "axisLabelLimit": 180,
+    "axisLabelPadding": 6,
+    "axisLabelOverlapStrategy": "parity",
+    "axisNumberFormat": ",.2f",
+    "axisDateFormat": "%Y-%m-%d",
+    "xAxisGridEnabled": 1,
+    "yAxisGridEnabled": 1,
+    "chartPointShape": "circle",
+    "chartPointSize": 70,
+    "chartPointOpacity": 1,
+    "chartAreaOpacity": 0.2,
+    "chartLineInterpolate": "linear",
+    "referenceLineColor": "#64748b",
+    "referenceLineWidth": 2,
+    "referenceLineDashStyle": "dashed",
+    "referenceLineLabelColor": "#111827",
+    "referenceLineLabelFontSize": 12,
+    "chartSeriesSelectedColor": "#22c55e",
+    "chartSeriesSelectedOpacity": 1,
+    "chartSeriesMutedColor": "#94a3b8",
+    "chartSeriesMutedOpacity": 0.45,
+    "chartSeriesInactiveOpacity": 0.2,
+    "currencySymbol": "$",
+    "compactSuffixes": {
+      "thousand": "k",
+      "million": "m",
+      "billion": "b"
+    },
+    "tooltip": {
+      "fillColor": "#f8fafc",
+      "backgroundColor": "#ffffff",
+      "textColor": "#0f172a",
+      "fontFamily": "Helvetica, Arial, sans-serif",
+      "fontSize": 12,
+      "fontWeight": "600",
+      "fontStyle": "normal",
+      "borderColor": "#cbd5e1",
+      "borderWidth": 1,
+      "borderRadius": 8,
+      "padding": 8
+    },
+    "colorTokens": {
+      "mono": {
+        "primary": { "light": "#4f46e5", "dark": "#60a5fa" },
+        "secondary": { "light": "#475569", "dark": "#94a3b8" },
+        "accent": { "light": "#0ea5e9", "dark": "#22d3ee" }
+      },
+      "multi": {
+        "categorical": {
+          "light": ["#4f46e5", "#0ea5e9", "#16a34a", "#d97706", "#dc2626", "#be185d"],
+          "dark": ["#60a5fa", "#22d3ee", "#4ade80", "#fbbf24", "#f87171", "#f472b6"]
+        },
+        "sequential": {
+          "light": ["#dbeafe", "#93c5fd", "#3b82f6", "#1d4ed8"],
+          "dark": ["#1e3a8a", "#2563eb", "#60a5fa", "#bfdbfe"]
+        }
+      },
+      "sentiment": {
+        "positive": { "light": "#16a34a", "dark": "#4ade80" },
+        "neutral": { "light": "#64748b", "dark": "#94a3b8" },
+        "negative": { "light": "#dc2626", "dark": "#f87171" }
+      },
+      "status": {
+        "error": { "light": "#dc2626", "dark": "#f87171" },
+        "warning": { "light": "#d97706", "dark": "#fbbf24" }
+      }
+    },
+    "overlapPalette": [
+      { "border": "#dc2626", "background": "#fee2e2" },
+      { "border": "#d97706", "background": "#ffedd5" },
+      { "border": "#0891b2", "background": "#cffafe" },
+      { "border": "#7c3aed", "background": "#ede9fe" },
+      { "border": "#16a34a", "background": "#dcfce7" },
+      { "border": "#be185d", "background": "#fce7f3" }
+    ],
+    "tooltipTheme": "light"
+  },
+  "spec": {
+    "background": "#ffffff",
+    "config": {
+      "font": "Helvetica, Arial, sans-serif",
+      "view": { "stroke": null },
+      "axis": {
+        "domain": false,
+        "gridColor": "#d1d5db",
+        "gridDash": [5, 5],
+        "labelFontSize": 14,
+        "titleFontSize": 15,
+        "labelFont": "Helvetica, Arial, sans-serif",
+        "titleFont": "Helvetica, Arial, sans-serif",
+        "labelColor": "#1f2937",
+        "titleColor": "#111827"
+      },
+      "text": {
+        "fontSize": 13,
+        "font": "Helvetica, Arial, sans-serif",
+        "color": "#1f2937"
+      }
+    },
+    "layer": [
+      {
+        "mark": {
+          "color": "#4f46e5",
+          "fillOpacity": 0.25,
+          "stroke": "#4f46e5",
+          "strokeOpacity": 1,
+          "strokeWidth": 2
+        }
+      },
+      {
+        "mark": {
+          "color": "#1f2937"
+        }
+      }
+    ],
+    "encoding": {
+      "x": {
+        "axis": {
+          "grid": true,
+          "gridColor": "#d1d5db",
+          "gridDash": [5, 5]
+        }
+      }
+    }
+  }
+}

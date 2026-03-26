@@ -1,0 +1,164 @@
+charts:
+  aging_by_bucket:
+    type: categorical_bar
+    title: AR Aging by Bucket
+    xField: AgingBucket
+    xType: ordinal
+    yField: Balance
+    yType: quantitative
+    sort:
+      - Current
+      - 1-30
+      - 31-60
+      - 61-90
+      - 91+
+    showDataLabels: true
+    parameters:
+      report_date:
+        type: date
+        uiControl: date_picker
+        label: Report Date
+        description: Reporting date used by the chart query
+        required: false
+      buckets:
+        type: aging_bucket_rules
+        uiControl: bucket_customizer
+        label: Aging Buckets
+        description: Custom bucket logic passed as JSON
+        required: false
+        default:
+          - id: b1
+            name: Current
+            isSpecial: false
+            combinator: AND
+            conditions:
+              - operator: '<='
+                value: 0
+          - id: b2
+            name: 1-30
+            isSpecial: false
+            combinator: AND
+            conditions:
+              - operator: '>='
+                value: 1
+              - operator: '<='
+                value: 30
+          - id: b3
+            name: 31-60
+            isSpecial: false
+            combinator: AND
+            conditions:
+              - operator: '>='
+                value: 31
+              - operator: '<='
+                value: 60
+          - id: b4
+            name: 61-90
+            isSpecial: false
+            combinator: AND
+            conditions:
+              - operator: '>='
+                value: 61
+              - operator: '<='
+                value: 90
+          - id: b5
+            name: 91+
+            isSpecial: false
+            combinator: AND
+            conditions:
+              - operator: '>'
+                value: 90
+    allowedQueryParams:
+      - report_date
+      - buckets
+    runtime:
+      queryParams:
+        reportDate: report_date
+        buckets: buckets
+      sqlTokens:
+        agingBucketExpr: AGING_BUCKET_EXPR
+        agingBucketOrderExpr: AGING_BUCKET_ORDER_EXPR
+        agingBucketDimRows: AGING_BUCKET_DIM_ROWS
+      controls:
+        reportDate: true
+        bucketCustomizer: true
+        bucketEditor:
+          labels:
+            modalTitle: Edit Aging Buckets
+            modalHelperText: Buckets can be renamed, and you can adjust upper and lower bounds. Single-condition buckets are supported. For non-aged logic (for example retainage/escrow), create a new bucket and mark it as special to enable no days past due filters & OR conditions.
+            addBucketButton: Add Bucket
+            restoreDefaultsButton: Restore Defaults
+            validateButton: Validate
+            cancelButton: Cancel
+            applyButton: Apply
+            overlapErrorText: Overlapping bucket conditions must be fixed before validation can pass.
+            validateBeforeApplyText: Please validate bucket changes before applying.
+          nameSuggestion:
+            title: Update Bucket Name?
+            subtitle: Bounds changed, so an auto-generated name is available.
+            boundsLabel: Bounds
+            currentLabel: Current
+            suggestedLabel: Suggested
+            customInputLabel: Enter Custom Name
+            previousButtonTitle: Previous bucket
+            nextButtonTitle: Next bucket
+            backButton: Back
+            applyCustomNameButton: Apply Name
+            useSuggestedButton: Use Suggested
+            keepCurrentButton: Keep Current
+            enterNewNameButton: Enter New Name
+          operatorOptions:
+            - '='
+            - '<>'
+            - '>='
+            - '<='
+            - '>'
+            - '<'
+          combinatorOptions:
+            - AND
+            - OR
+        canvasSizeOptions:
+          - value: fit-screen
+            label: Fit to Screen
+            displayOrder: 1
+          - value: fit-width
+            label: Fit to Width
+            displayOrder: 2
+          - value: fit-height
+            label: Fit to Height
+            displayOrder: 3
+          - value: ratio-4-3
+            label: 4:3
+            displayOrder: 4
+          - value: ratio-16-9
+            label: 16:9
+            displayOrder: 5
+          - value: ratio-16-10
+            label: 16:10
+            displayOrder: 6
+          - value: ratio-21-9
+            label: 21:9
+            displayOrder: 7
+          - value: custom-pixels
+            label: Custom Pixels...
+            displayOrder: 8
+      chartRuntime:
+        categoryField: AgingBucket
+        valueField: Balance
+        bucketOrderField: BucketOrder
+        hoverField: AgingBucket
+        hoverParamName: barHoverLocal
+        xAxisTitlePrefix: Receivable Balance
+        valueFormatting:
+          axisDecimals: 0
+          compactDecimals: 1
+          tooltipDecimals: 2
+        tooltip:
+          enabled: true
+          categoryTitle: Bucket
+          valueTitle: Balance
+        unitLabels:
+          base: Dollars
+          thousand: Thousands
+          million: Millions
+          billion: Billions

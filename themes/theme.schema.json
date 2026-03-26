@@ -1,0 +1,263 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ChartThemeV2",
+  "type": "object",
+  "required": ["key", "label", "scope", "ui", "spec"],
+  "properties": {
+    "key": { "type": "string" },
+    "label": { "type": "string" },
+    "createdBy": { "type": "string" },
+    "displayOrder": { "type": "integer" },
+    "extends": { "type": "string" },
+    "scope": {
+      "type": "string",
+      "enum": ["global", "domain", "rulebook", "dashboard"]
+    },
+    "appliesTo": {
+      "type": "object",
+      "properties": {
+        "domain": { "type": "array", "items": { "type": "string" } },
+        "rulebook": { "type": "array", "items": { "type": "string" } },
+        "chart": { "type": "array", "items": { "type": "string" } },
+        "dashboard": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "ui": {
+      "type": "object",
+      "properties": {
+        "pageBackground": { "type": "string" },
+        "pageText": { "type": "string" },
+        "cardBackground": { "type": "string" },
+        "cardShadow": { "type": "string" },
+        "buttonBackground": { "type": "string" },
+        "buttonText": { "type": "string" },
+        "buttonBorder": { "type": "string" },
+        "hoverColor": { "type": "string" },
+        "fontFamily": { "type": "string" },
+        "modalOverlayBackground": { "type": "string" },
+        "statusDanger": { "type": "string" },
+        "statusSuccess": { "type": "string" },
+        "statusOnColor": { "type": "string" },
+        "chartBarDefaultColor": { "type": "string" },
+        "chartBarHoverColor": { "type": "string" },
+        "chartBarDefaultOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "chartBarHoverOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "chartBarDefaultStrokeColor": { "type": "string" },
+        "chartBarHoverStrokeColor": { "type": "string" },
+        "chartBarDefaultStrokeOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "chartBarHoverStrokeOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "chartBarDefaultStrokeWidth": { "type": "number", "minimum": 0 },
+        "chartBarHoverStrokeWidth": { "type": "number", "minimum": 0 },
+        "chartCardBorderRadius": { "type": "number", "minimum": 0 },
+        "chartViewCornerRadius": { "type": "number", "minimum": 0 },
+        "chartBarCornerRadius": { "type": "number", "minimum": 0 },
+        "chartRectCornerRadius": { "type": "number", "minimum": 0 },
+        "chartLegendCornerRadius": { "type": "number", "minimum": 0 },
+        "chartBarBandPaddingInner": { "type": "number", "minimum": 0 },
+        "chartBarBandPaddingOuter": { "type": "number", "minimum": 0 },
+        "chartBandPaddingInner": { "type": "number", "minimum": 0 },
+        "chartBandPaddingOuter": { "type": "number", "minimum": 0 },
+        "chartBarDiscreteBandSize": { "type": "number", "minimum": 0 },
+        "chartBarContinuousBandSize": { "type": "number", "minimum": 0 },
+        "chartLineStrokeColor": { "type": "string" },
+        "chartLineFillColor": { "type": "string" },
+        "chartLineStrokeWidth": { "type": "number", "minimum": 0 },
+        "chartLinePointFillColor": { "type": "string" },
+        "chartLinePointStrokeColor": { "type": "string" },
+        "chartLinePointStrokeWidth": { "type": "number", "minimum": 0 },
+        "titleFontFamily": { "type": "string" },
+        "titleFontSize": { "type": "number", "minimum": 1 },
+        "titleFontWeight": { "type": "string" },
+        "titleFontStyle": { "type": "string" },
+        "titleFontColor": { "type": "string" },
+        "axisTickCount": { "type": "number", "minimum": 1 },
+        "axisGridDashStyle": { "type": "string", "enum": ["solid", "dotted", "dashed"] },
+        "axisDomainDashStyle": { "type": "string", "enum": ["solid", "dotted", "dashed"] },
+        "axisTickDashStyle": { "type": "string", "enum": ["solid", "dotted", "dashed"] },
+        "axisGridWidth": { "type": "number", "minimum": 0 },
+        "axisTickWidth": { "type": "number", "minimum": 0 },
+        "axisDomainWidth": { "type": "number", "minimum": 0 },
+        "legendSymbolSize": { "type": "number", "minimum": 0 },
+        "legendSymbolStrokeWidth": { "type": "number", "minimum": 0 },
+        "legendLabelLimit": { "type": "number", "minimum": 0 },
+        "legendRowPadding": { "type": "number", "minimum": 0 },
+        "legendColumnPadding": { "type": "number", "minimum": 0 },
+        "legendOrient": {
+          "type": "string",
+          "enum": ["left", "right", "top", "bottom", "top-left", "top-right", "bottom-left", "bottom-right"]
+        },
+        "axisLabelAngle": { "type": "number" },
+        "axisLabelLimit": { "type": "number", "minimum": 0 },
+        "axisLabelPadding": { "type": "number", "minimum": 0 },
+        "axisLabelOverlapStrategy": { "type": "string", "enum": ["parity", "greedy", "none"] },
+        "axisNumberFormat": { "type": "string" },
+        "axisDateFormat": { "type": "string" },
+        "xAxisGridEnabled": { "type": "number", "enum": [0, 1] },
+        "yAxisGridEnabled": { "type": "number", "enum": [0, 1] },
+        "chartPointShape": {
+          "type": "string",
+          "enum": ["circle", "square", "cross", "diamond", "triangle-up", "triangle-down"]
+        },
+        "chartPointSize": { "type": "number", "minimum": 0 },
+        "chartPointOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "chartAreaOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "chartLineInterpolate": {
+          "type": "string",
+          "enum": ["linear", "step", "step-after", "step-before", "basis", "cardinal", "monotone"]
+        },
+        "referenceLineColor": { "type": "string" },
+        "referenceLineWidth": { "type": "number", "minimum": 0 },
+        "referenceLineDashStyle": { "type": "string", "enum": ["solid", "dotted", "dashed"] },
+        "referenceLineLabelColor": { "type": "string" },
+        "referenceLineLabelFontSize": { "type": "number", "minimum": 1 },
+        "chartSeriesSelectedColor": { "type": "string" },
+        "chartSeriesSelectedOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "chartSeriesMutedColor": { "type": "string" },
+        "chartSeriesMutedOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "chartSeriesInactiveOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "colorTokens": {
+          "type": "object",
+          "properties": {
+            "mono": {
+              "type": "object",
+              "properties": {
+                "primary": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "string" },
+                    "dark": { "type": "string" }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                },
+                "secondary": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "string" },
+                    "dark": { "type": "string" }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                },
+                "accent": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "string" },
+                    "dark": { "type": "string" }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": true
+            },
+            "multi": {
+              "type": "object",
+              "properties": {
+                "categorical": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "array", "items": { "type": "string" } },
+                    "dark": { "type": "array", "items": { "type": "string" } }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                },
+                "sequential": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "array", "items": { "type": "string" } },
+                    "dark": { "type": "array", "items": { "type": "string" } }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": true
+            },
+            "sentiment": {
+              "type": "object",
+              "properties": {
+                "positive": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "string" },
+                    "dark": { "type": "string" }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                },
+                "neutral": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "string" },
+                    "dark": { "type": "string" }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                },
+                "negative": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "string" },
+                    "dark": { "type": "string" }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": true
+            },
+            "status": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "string" },
+                    "dark": { "type": "string" }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                },
+                "warning": {
+                  "type": "object",
+                  "properties": {
+                    "light": { "type": "string" },
+                    "dark": { "type": "string" }
+                  },
+                  "required": ["light", "dark"],
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
+        },
+        "overlapPalette": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "border": { "type": "string" },
+              "background": { "type": "string" }
+            },
+            "required": ["border", "background"],
+            "additionalProperties": false
+          }
+        },
+        "tooltipTheme": { "type": "string", "enum": ["light", "dark"] }
+      },
+      "additionalProperties": true
+    },
+    "spec": {
+      "type": "object",
+      "description": "Vega-Lite overrides merged on top of base chart spec",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
+

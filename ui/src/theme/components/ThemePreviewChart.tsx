@@ -1,0 +1,651 @@
+import VegaChartRenderer from '../../charts/components/VegaChartRenderer';
+import type { ThemeBuilderUiTheme } from '../types';
+import { normalizeHexColor } from '../utils';
+
+type ThemePreviewChartProps = {
+  uiTheme: ThemeBuilderUiTheme;
+  editableThemeUi: Record<string, unknown> | null;
+  colorDraftByToken: Record<string, string>;
+};
+
+type TypographySettings = {
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: string;
+  fontStyle: string;
+  fontColor: string;
+  textRenderMode: 'fill' | 'hollow';
+  textStrokeColor: string;
+  textStrokeWidth: number;
+};
+
+function getTokenColor(
+  colorDraftByToken: Record<string, string>,
+  terms: string[],
+  fallback: string
+): string {
+  const entries = Object.entries(colorDraftByToken);
+  for (const [key, value] of entries) {
+    const normalizedKey = key.toLowerCase();
+    if (terms.some((term) => normalizedKey.includes(term.toLowerCase()))) {
+      return value;
+    }
+  }
+  return fallback;
+}
+
+function clamp01(value: number) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function getUiNumber(
+  editableThemeUi: Record<string, unknown> | null,
+  key: string,
+  fallback: number
+) {
+  if (!editableThemeUi) {
+    return fallback;
+  }
+
+  const value = editableThemeUi[key];
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  return fallback;
+}
+
+function getUiString(
+  editableThemeUi: Record<string, unknown> | null,
+  key: string,
+  fallback: string
+) {
+  if (!editableThemeUi) {
+    return fallback;
+  }
+
+  const value = editableThemeUi[key];
+  return typeof value === 'string' && value.trim() ? value : fallback;
+}
+
+function getUiDashStyle(
+  editableThemeUi: Record<string, unknown> | null,
+  key: string,
+  fallback: 'solid' | 'dotted' | 'dashed'
+): 'solid' | 'dotted' | 'dashed' {
+  const value = getUiString(editableThemeUi, key, fallback);
+  return value === 'dotted' || value === 'dashed' ? value : 'solid';
+}
+
+function toDashArray(style: 'solid' | 'dotted' | 'dashed') {
+  if (style === 'dotted') {
+    return [1, 3];
+  }
+  if (style === 'dashed') {
+    return [6, 4];
+  }
+  return [];
+}
+
+function getUiColor(
+  editableThemeUi: Record<string, unknown> | null,
+  key: string,
+  fallback: string
+) {
+  return normalizeHexColor(getUiString(editableThemeUi, key, fallback)) ?? fallback;
+}
+
+function getTypographySettingKey(prefix: string | null, suffix: string) {
+  return prefix ? `${prefix}${suffix}` : `${suffix.charAt(0).toLowerCase()}${suffix.slice(1)}`;
+}
+
+function resolveTypographySettings(
+  editableThemeUi: Record<string, unknown> | null,
+  prefix: string | null,
+  fallback: TypographySettings
+): TypographySettings {
+  return {
+    fontFamily: getUiString(
+      editableThemeUi,
+      getTypographySettingKey(prefix, 'FontFamily'),
+      fallback.fontFamily
+    ),
+    fontSize: Math.max(
+      8,
+      getUiNumber(editableThemeUi, getTypographySettingKey(prefix, 'FontSize'), fallback.fontSize)
+    ),
+    fontWeight: getUiString(
+      editableThemeUi,
+      getTypographySettingKey(prefix, 'FontWeight'),
+      fallback.fontWeight
+    ),
+    fontStyle: getUiString(
+      editableThemeUi,
+      getTypographySettingKey(prefix, 'FontStyle'),
+      fallback.fontStyle
+    ),
+    fontColor: getUiColor(
+      editableThemeUi,
+      getTypographySettingKey(prefix, 'FontColor'),
+      fallback.fontColor
+    ),
+    textRenderMode:
+      getUiString(
+        editableThemeUi,
+        getTypographySettingKey(prefix, 'TextRenderMode'),
+        fallback.textRenderMode
+      ) === 'hollow'
+        ? 'hollow'
+        : 'fill',
+    textStrokeColor: getUiColor(
+      editableThemeUi,
+      getTypographySettingKey(prefix, 'TextStrokeColor'),
+      fallback.textStrokeColor
+    ),
+    textStrokeWidth: Math.max(
+      0.1,
+      getUiNumber(
+        editableThemeUi,
+        getTypographySettingKey(prefix, 'TextStrokeWidth'),
+        fallback.textStrokeWidth
+      )
+    ),
+  };
+}
+
+function getTooltipTheme(background: string): 'light' | 'dark' {
+  const hex = background.replace('#', '').trim();
+  if (!/^[0-9a-fA-F]{6}$/.test(hex)) {
+    return 'light';
+  }
+  const r = Number.parseInt(hex.slice(0, 2), 16);
+  const g = Number.parseInt(hex.slice(2, 4), 16);
+  const b = Number.parseInt(hex.slice(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance < 0.5 ? 'dark' : 'light';
+}
+
+export default function ThemePreviewChart({
+  uiTheme,
+  editableThemeUi,
+  colorDraftByToken,
+}: ThemePreviewChartProps) {
+  const pageBackground = getTokenColor(colorDraftByToken, ['pageBackground'], uiTheme.pageBackground);
+  const pageText = getTokenColor(colorDraftByToken, ['pageText'], uiTheme.pageText);
+  const tone = getTooltipTheme(pageBackground) === 'dark' ? 'dark' : 'light';
+  const hoverColor = getTokenColor(colorDraftByToken, ['hoverColor'], '#22c55e');
+  const barDefaultColor = getTokenColor(colorDraftByToken, ['chartBarDefaultColor'], '#4f46e5');
+  const barHoverColor = getTokenColor(
+    colorDraftByToken,
+    ['chartBarHoverColor', 'hoverColor'],
+    '#10b981'
+  );
+  const barStrokeColor = getTokenColor(colorDraftByToken, ['chartBarDefaultStrokeColor'], '#1f2937');
+  const barHoverStrokeColor = getTokenColor(
+    colorDraftByToken,
+    ['chartBarHoverStrokeColor', 'hoverColor'],
+    barHoverColor
+  );
+  const barDefaultOpacity = clamp01(getUiNumber(editableThemeUi, 'chartBarDefaultOpacity', 0.78));
+  const barHoverOpacity = clamp01(getUiNumber(editableThemeUi, 'chartBarHoverOpacity', 1));
+  const barDefaultStrokeOpacity = clamp01(
+    getUiNumber(editableThemeUi, 'chartBarDefaultStrokeOpacity', 1)
+  );
+  const barHoverStrokeOpacity = clamp01(
+    getUiNumber(editableThemeUi, 'chartBarHoverStrokeOpacity', 1)
+  );
+  const barDefaultStrokeWidth = Math.max(
+    0,
+    getUiNumber(editableThemeUi, 'chartBarDefaultStrokeWidth', 1.5)
+  );
+  const barHoverStrokeWidth = Math.max(
+    0,
+    getUiNumber(editableThemeUi, 'chartBarHoverStrokeWidth', 3)
+  );
+
+  const categoricalB = getTokenColor(
+    colorDraftByToken,
+    [`colorTokens.multi.categorical.${tone}[1]`, `colorTokens.multi.categorical.${tone}.1`],
+    '#0ea5e9'
+  );
+  const overlapBandBackground = getTokenColor(
+    colorDraftByToken,
+    ['overlapPalette[0].background', 'overlapPalette.0.background'],
+    '#fee2e2'
+  );
+  const overlapBandBorder = getTokenColor(
+    colorDraftByToken,
+    ['overlapPalette[0].border', 'overlapPalette.0.border'],
+    '#dc2626'
+  );
+  const statusSuccess = getTokenColor(colorDraftByToken, ['statusSuccess'], '#16a34a');
+  const axisGrid = getTokenColor(colorDraftByToken, ['buttonBorder', 'border'], '#cbd5e1');
+
+  const sharedTypography = resolveTypographySettings(editableThemeUi, null, {
+    fontFamily: 'Helvetica, Arial, sans-serif',
+    fontSize: 12,
+    fontWeight: 'normal',
+    fontStyle: 'normal',
+    fontColor: pageText,
+    textRenderMode: 'fill',
+    textStrokeColor: pageText,
+    textStrokeWidth: 1.2,
+  });
+  const titleTypography = resolveTypographySettings(editableThemeUi, 'title', sharedTypography);
+  const legendTypography = resolveTypographySettings(editableThemeUi, 'legend', sharedTypography);
+  const axisTypography = resolveTypographySettings(editableThemeUi, 'axis', sharedTypography);
+  const barLabelTypography = resolveTypographySettings(editableThemeUi, 'barLabel', sharedTypography);
+  const tooltipTypography = resolveTypographySettings(editableThemeUi, 'tooltip', sharedTypography);
+
+  const tooltipCardBackground = getUiColor(
+    editableThemeUi,
+    'tooltipBackgroundColor',
+    tone === 'dark' ? '#111827' : '#ffffff'
+  );
+  const tooltipCardBorder = getUiColor(
+    editableThemeUi,
+    'tooltipBorderColor',
+    tone === 'dark' ? '#334155' : '#d1d5db'
+  );
+  const tooltipBorderWidth = Math.max(0, getUiNumber(editableThemeUi, 'tooltipBorderWidth', 1));
+  const tooltipPadding = Math.max(0, getUiNumber(editableThemeUi, 'tooltipPadding', 12));
+  const chartCardBorderRadius = Math.max(0, getUiNumber(editableThemeUi, 'chartCardBorderRadius', 12));
+  const chartViewCornerRadius = Math.max(0, getUiNumber(editableThemeUi, 'chartViewCornerRadius', 0));
+  const chartBarCornerRadius = Math.max(0, getUiNumber(editableThemeUi, 'chartBarCornerRadius', 4));
+  const chartRectCornerRadius = Math.max(0, getUiNumber(editableThemeUi, 'chartRectCornerRadius', 4));
+  const chartBarBandPaddingInner = Math.max(0, getUiNumber(editableThemeUi, 'chartBarBandPaddingInner', 0.15));
+  const chartBarBandPaddingOuter = Math.max(0, getUiNumber(editableThemeUi, 'chartBarBandPaddingOuter', 0.1));
+  const chartLineStrokeColor = getUiColor(editableThemeUi, 'chartLineStrokeColor', hoverColor);
+  const chartLineFillColor = getUiColor(editableThemeUi, 'chartLineFillColor', hoverColor);
+  const chartLineStrokeWidth = Math.max(0, getUiNumber(editableThemeUi, 'chartLineStrokeWidth', 2));
+  const chartLinePointFillColor = getUiColor(editableThemeUi, 'chartLinePointFillColor', statusSuccess);
+  const chartLinePointStrokeColor = getUiColor(editableThemeUi, 'chartLinePointStrokeColor', pageBackground);
+  const chartLinePointStrokeWidth = Math.max(0, getUiNumber(editableThemeUi, 'chartLinePointStrokeWidth', 1));
+  const axisTickCount = Math.max(2, getUiNumber(editableThemeUi, 'axisTickCount', 6));
+  const axisGridDash = toDashArray(getUiDashStyle(editableThemeUi, 'axisGridDashStyle', 'solid'));
+  const axisTickDash = toDashArray(getUiDashStyle(editableThemeUi, 'axisTickDashStyle', 'solid'));
+  const axisDomainDash = toDashArray(getUiDashStyle(editableThemeUi, 'axisDomainDashStyle', 'solid'));
+  const axisGridWidth = Math.max(0, getUiNumber(editableThemeUi, 'axisGridWidth', 1));
+  const axisTickWidth = Math.max(0, getUiNumber(editableThemeUi, 'axisTickWidth', 1));
+  const axisDomainWidth = Math.max(0, getUiNumber(editableThemeUi, 'axisDomainWidth', 1));
+  const legendSymbolSize = Math.max(0, getUiNumber(editableThemeUi, 'legendSymbolSize', 140));
+  const legendSymbolStrokeWidth = Math.max(0, getUiNumber(editableThemeUi, 'legendSymbolStrokeWidth', 1));
+  const legendLabelLimit = Math.max(20, getUiNumber(editableThemeUi, 'legendLabelLimit', 220));
+  const legendRowPadding = Math.max(0, getUiNumber(editableThemeUi, 'legendRowPadding', 4));
+  const legendColumnPadding = Math.max(0, getUiNumber(editableThemeUi, 'legendColumnPadding', 12));
+  const legendOrient = getUiString(editableThemeUi, 'legendOrient', 'right');
+  const axisLabelAngle = getUiNumber(editableThemeUi, 'axisLabelAngle', 0);
+  const axisLabelLimit = Math.max(20, getUiNumber(editableThemeUi, 'axisLabelLimit', 180));
+  const axisLabelPadding = Math.max(0, getUiNumber(editableThemeUi, 'axisLabelPadding', 6));
+  const axisLabelOverlapStrategy = getUiString(editableThemeUi, 'axisLabelOverlapStrategy', 'parity');
+  const axisNumberFormat = getUiString(editableThemeUi, 'axisNumberFormat', ',.2f');
+  const xAxisGridEnabled = getUiNumber(editableThemeUi, 'xAxisGridEnabled', 1) > 0;
+  const yAxisGridEnabled = getUiNumber(editableThemeUi, 'yAxisGridEnabled', 1) > 0;
+  const chartPointShape = getUiString(editableThemeUi, 'chartPointShape', 'circle');
+  const chartPointSize = Math.max(0, getUiNumber(editableThemeUi, 'chartPointSize', 70));
+  const chartPointOpacity = clamp01(getUiNumber(editableThemeUi, 'chartPointOpacity', 1));
+  const chartAreaOpacity = clamp01(getUiNumber(editableThemeUi, 'chartAreaOpacity', 0.2));
+  const chartLineInterpolate = getUiString(editableThemeUi, 'chartLineInterpolate', 'linear');
+  const referenceLineColor = getUiColor(editableThemeUi, 'referenceLineColor', hoverColor);
+  const referenceLineWidth = Math.max(0, getUiNumber(editableThemeUi, 'referenceLineWidth', 2));
+  const referenceLineDash = toDashArray(getUiDashStyle(editableThemeUi, 'referenceLineDashStyle', 'dashed'));
+  const referenceLineLabelColor = getUiColor(editableThemeUi, 'referenceLineLabelColor', pageText);
+  const referenceLineLabelFontSize = Math.max(8, getUiNumber(editableThemeUi, 'referenceLineLabelFontSize', 12));
+  const chartSeriesSelectedColor = getUiColor(editableThemeUi, 'chartSeriesSelectedColor', barHoverColor);
+  const chartSeriesSelectedOpacity = clamp01(getUiNumber(editableThemeUi, 'chartSeriesSelectedOpacity', 1));
+  const chartSeriesMutedColor = getUiColor(editableThemeUi, 'chartSeriesMutedColor', '#94a3b8');
+  const chartSeriesMutedOpacity = clamp01(getUiNumber(editableThemeUi, 'chartSeriesMutedOpacity', 0.45));
+  const chartSeriesInactiveOpacity = clamp01(getUiNumber(editableThemeUi, 'chartSeriesInactiveOpacity', 0.2));
+
+  const spec = {
+    $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+    width: 720,
+    height: 420,
+    title: 'Theme Preview: Bars + Line + Labels',
+    data: {
+      values: [
+        { month: 'Jan', value: 130, target: 110, segment: 'Actual', label: '130' },
+        { month: 'Jan', value: 105, target: 110, segment: 'Prior', label: '105' },
+        { month: 'Feb', value: 180, target: 150, segment: 'Actual', label: '180' },
+        { month: 'Feb', value: 150, target: 150, segment: 'Prior', label: '150' },
+        { month: 'Mar', value: 160, target: 170, segment: 'Actual', label: '160' },
+        { month: 'Mar', value: 145, target: 170, segment: 'Prior', label: '145' },
+        { month: 'Apr', value: 210, target: 190, segment: 'Actual', label: '210' },
+        { month: 'Apr', value: 188, target: 190, segment: 'Prior', label: '188' },
+        { month: 'May', value: 240, target: 220, segment: 'Actual', label: '240' },
+        { month: 'May', value: 205, target: 220, segment: 'Prior', label: '205' },
+      ],
+    },
+    layer: [
+      {
+        mark: {
+          type: 'rect',
+          opacity: 0.24,
+          strokeWidth: 1,
+          strokeDash: [3, 3],
+          cornerRadius: chartRectCornerRadius,
+        },
+        encoding: {
+          x: { datum: 'Apr' },
+          x2: { datum: 'May' },
+          color: { value: overlapBandBackground },
+          stroke: { value: overlapBandBorder },
+        },
+      },
+      {
+        params: [
+          {
+            name: 'barHoverPreview',
+            select: {
+              type: 'point',
+              fields: ['month', 'segment'],
+              on: 'mouseover',
+              clear: 'mouseout',
+            },
+          },
+          {
+            name: 'barSelectPreview',
+            select: {
+              type: 'point',
+              fields: ['month', 'segment'],
+              on: 'click',
+            },
+          },
+        ],
+        mark: {
+          type: 'bar',
+          cornerRadiusTopLeft: chartBarCornerRadius,
+          cornerRadiusTopRight: chartBarCornerRadius,
+        },
+        encoding: {
+          x: { field: 'month', type: 'ordinal', title: 'Month' },
+          xOffset: { field: 'segment' },
+          y: { field: 'value', type: 'quantitative', title: 'Value' },
+          color: {
+            condition: [
+              {
+                param: 'barHoverPreview',
+                empty: false,
+                value: barHoverColor,
+              },
+              {
+                param: 'barSelectPreview',
+                empty: false,
+                value: chartSeriesSelectedColor,
+              },
+              {
+                test: 'length(data("barSelectPreview_store")) > 0',
+                value: chartSeriesMutedColor,
+              },
+            ],
+            field: 'segment',
+            type: 'nominal',
+            scale: { domain: ['Actual', 'Prior'], range: [barDefaultColor, categoricalB] },
+            legend: { title: 'Series' },
+          },
+          opacity: {
+            condition: [
+              {
+                param: 'barHoverPreview',
+                empty: false,
+                value: barHoverOpacity,
+              },
+              {
+                param: 'barSelectPreview',
+                empty: false,
+                value: chartSeriesSelectedOpacity,
+              },
+              {
+                test: 'length(data("barSelectPreview_store")) > 0',
+                value: chartSeriesMutedOpacity,
+              },
+            ],
+            value: chartSeriesInactiveOpacity || barDefaultOpacity,
+          },
+          stroke: {
+            condition: {
+              param: 'barHoverPreview',
+              empty: false,
+              value: barHoverStrokeColor,
+            },
+            value: barStrokeColor,
+          },
+          strokeOpacity: {
+            condition: {
+              param: 'barHoverPreview',
+              empty: false,
+              value: barHoverStrokeOpacity,
+            },
+            value: barDefaultStrokeOpacity,
+          },
+          strokeWidth: {
+            condition: {
+              param: 'barHoverPreview',
+              empty: false,
+              value: barHoverStrokeWidth,
+            },
+            value: barDefaultStrokeWidth,
+          },
+          tooltip: [
+            { field: 'month', type: 'nominal', title: 'Month' },
+            { field: 'segment', type: 'nominal', title: 'Series' },
+            { field: 'value', type: 'quantitative', title: 'Actual' },
+            { field: 'target', type: 'quantitative', title: 'Target' },
+          ],
+        },
+      },
+      {
+        mark: {
+          type: 'area',
+          interpolate: chartLineInterpolate,
+          color: chartLineFillColor,
+          opacity: chartAreaOpacity,
+        },
+        encoding: {
+          x: { field: 'month', type: 'ordinal' },
+          y: { field: 'target', type: 'quantitative' },
+        },
+      },
+      {
+        mark: {
+          type: 'line',
+          point: false,
+          strokeDash: [6, 4],
+          stroke: chartLineStrokeColor,
+          fill: chartLineFillColor,
+          strokeWidth: chartLineStrokeWidth,
+          interpolate: chartLineInterpolate,
+        },
+        encoding: {
+          x: { field: 'month', type: 'ordinal' },
+          y: { field: 'target', type: 'quantitative' },
+          color: { value: hoverColor },
+        },
+      },
+      {
+        mark: {
+          type: 'point',
+          size: chartPointSize,
+          filled: true,
+          fill: chartLinePointFillColor,
+          stroke: chartLinePointStrokeColor,
+          strokeWidth: chartLinePointStrokeWidth,
+          shape: chartPointShape,
+          opacity: chartPointOpacity,
+        },
+        encoding: {
+          x: { field: 'month', type: 'ordinal' },
+          y: { field: 'target', type: 'quantitative' },
+          color: { value: statusSuccess },
+        },
+      },
+      {
+        transform: [{ filter: "datum.segment === 'Actual'" }],
+        mark: {
+          type: 'text',
+          dy: -8,
+          font: barLabelTypography.fontFamily,
+          fontSize: barLabelTypography.fontSize,
+          fontWeight: barLabelTypography.fontWeight,
+          fontStyle: barLabelTypography.fontStyle,
+          fill: barLabelTypography.fontColor,
+          fillOpacity: sharedTypography.textRenderMode === 'hollow' ? 0 : 1,
+          stroke: sharedTypography.textStrokeColor,
+          strokeWidth: sharedTypography.textRenderMode === 'hollow' ? sharedTypography.textStrokeWidth : 0,
+        },
+        encoding: {
+          x: { field: 'month', type: 'ordinal' },
+          y: { field: 'value', type: 'quantitative' },
+          text: { field: 'label', type: 'nominal' },
+        },
+      },
+      {
+        mark: {
+          type: 'rule',
+          strokeDash: referenceLineDash,
+          strokeWidth: referenceLineWidth,
+          color: referenceLineColor,
+        },
+        encoding: {
+          y: { datum: 175 },
+          color: { value: referenceLineColor },
+        },
+      },
+      {
+        mark: {
+          type: 'text',
+          align: 'left',
+          dx: 8,
+          dy: -6,
+          fill: referenceLineLabelColor,
+          fontSize: referenceLineLabelFontSize,
+          font: sharedTypography.fontFamily,
+          fontWeight: '600',
+          style: 'referenceLineLabel',
+        },
+        encoding: {
+          x: { datum: 'Jan' },
+          y: { datum: 175 },
+          text: { value: 'Target Threshold' },
+        },
+      },
+    ],
+    config: {
+      background: pageBackground,
+      view: { stroke: axisGrid, strokeOpacity: 0.85, cornerRadius: chartViewCornerRadius },
+      scale: {
+        bandPaddingInner: chartBarBandPaddingInner,
+        bandPaddingOuter: chartBarBandPaddingOuter,
+      },
+      bar: {
+        cornerRadius: chartBarCornerRadius,
+      },
+      rect: {
+        cornerRadius: chartRectCornerRadius,
+      },
+      axis: {
+        labelColor: axisTypography.fontColor,
+        titleColor: axisTypography.fontColor,
+        labelFont: axisTypography.fontFamily,
+        titleFont: axisTypography.fontFamily,
+        labelFontSize: Math.max(10, axisTypography.fontSize - 1),
+        titleFontSize: Math.max(12, axisTypography.fontSize + 1),
+        labelFontStyle: axisTypography.fontStyle,
+        titleFontStyle: axisTypography.fontStyle,
+        labelFontWeight: axisTypography.fontWeight,
+        titleFontWeight: axisTypography.fontWeight,
+        grid: true,
+        gridColor: axisGrid,
+        domainColor: axisGrid,
+        tickColor: axisGrid,
+        tickCount: axisTickCount,
+        labelAngle: axisLabelAngle,
+        labelLimit: axisLabelLimit,
+        labelPadding: axisLabelPadding,
+        labelOverlap: axisLabelOverlapStrategy,
+        format: axisNumberFormat,
+        gridDash: axisGridDash,
+        tickDash: axisTickDash,
+        domainDash: axisDomainDash,
+        gridWidth: axisGridWidth,
+        tickWidth: axisTickWidth,
+        domainWidth: axisDomainWidth,
+      },
+      axisX: {
+        grid: xAxisGridEnabled,
+      },
+      axisY: {
+        grid: yAxisGridEnabled,
+      },
+      title: {
+        color: titleTypography.fontColor,
+        font: titleTypography.fontFamily,
+        fontSize: Math.max(14, titleTypography.fontSize + 3),
+        fontWeight: titleTypography.fontWeight,
+        fontStyle: titleTypography.fontStyle,
+      },
+      legend: {
+        labelColor: legendTypography.fontColor,
+        titleColor: legendTypography.fontColor,
+        labelFont: legendTypography.fontFamily,
+        titleFont: legendTypography.fontFamily,
+        labelFontSize: Math.max(10, legendTypography.fontSize - 1),
+        titleFontSize: Math.max(12, legendTypography.fontSize + 1),
+        labelFontStyle: legendTypography.fontStyle,
+        titleFontStyle: legendTypography.fontStyle,
+        labelFontWeight: legendTypography.fontWeight,
+        titleFontWeight: legendTypography.fontWeight,
+        symbolSize: legendSymbolSize,
+        symbolStrokeWidth: legendSymbolStrokeWidth,
+        labelLimit: legendLabelLimit,
+        rowPadding: legendRowPadding,
+        columnPadding: legendColumnPadding,
+        orient: legendOrient,
+      },
+      style: {
+        'guide-label': {
+          fill: axisTypography.fontColor,
+          font: axisTypography.fontFamily,
+          fontStyle: axisTypography.fontStyle,
+          fontWeight: axisTypography.fontWeight,
+        },
+        'guide-title': {
+          fill: axisTypography.fontColor,
+          font: axisTypography.fontFamily,
+          fontStyle: axisTypography.fontStyle,
+          fontWeight: axisTypography.fontWeight,
+        },
+        referenceLineLabel: {
+          fill: referenceLineLabelColor,
+          font: sharedTypography.fontFamily,
+          fontSize: referenceLineLabelFontSize,
+          fontWeight: '600',
+        },
+      },
+    },
+  };
+
+  return (
+    <VegaChartRenderer
+      spec={spec}
+      tooltipTheme={getTooltipTheme(pageBackground)}
+      cardBackground={uiTheme.cardBackground}
+      cardShadow={uiTheme.cardShadow}
+      cardBorderRadius={chartCardBorderRadius}
+      tooltipStyle={{
+        fillColor: tooltipCardBackground,
+        fontFamily: tooltipTypography.fontFamily,
+        fontSize: tooltipTypography.fontSize,
+        fontWeight: tooltipTypography.fontWeight,
+        fontStyle: tooltipTypography.fontStyle,
+        textColor: tooltipTypography.fontColor,
+        backgroundColor: tooltipCardBackground,
+        borderColor: tooltipCardBorder,
+        borderWidth: tooltipBorderWidth,
+        borderRadius: 8,
+        padding: tooltipPadding,
+      }}
+      canvasSizeMode="fit-width"
+    />
+  );
+}
