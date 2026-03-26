@@ -6,7 +6,7 @@ export async function fetchThemes(context: ThemeBuilderContext): Promise<{
 }> {
   const params = new URLSearchParams({
     domain: context.domain,
-    pack: context.pack,
+    rulebook: context.rulebook,
     chart: context.chart,
     dashboard: context.dashboard,
   });
@@ -31,7 +31,7 @@ export async function fetchThemes(context: ThemeBuilderContext): Promise<{
 export async function saveTheme(payload: {
   key: string;
   label: string;
-  scope: 'global' | 'domain' | 'pack' | 'dashboard';
+  scope: 'global' | 'domain' | 'rulebook' | 'dashboard';
   extends: string;
   createdBy: string;
   ui: Record<string, unknown>;
@@ -57,3 +57,4 @@ export async function saveTheme(payload: {
 
   return body.theme;
 }
+

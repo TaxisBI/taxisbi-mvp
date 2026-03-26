@@ -9,7 +9,7 @@ export const THEME_BUILDER_REPORTS = {
   'ar-aging': {
     themeContext: {
       domain: 'AR',
-      pack: 'Receivable_item',
+      rulebook: 'Receivable_item',
       chart: 'aging_by_bucket',
       dashboard: 'ar-aging-bucket',
     },
@@ -25,3 +25,4 @@ export function isThemeBuilderReportId(value: string): value is ThemeBuilderRepo
 export function getThemeBuilderContextForReport(reportId: ThemeBuilderReportId): ThemeBuilderContext {
   return THEME_BUILDER_REPORTS[reportId].themeContext;
 }
+

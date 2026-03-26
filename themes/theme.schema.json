@@ -11,13 +11,13 @@
     "extends": { "type": "string" },
     "scope": {
       "type": "string",
-      "enum": ["global", "domain", "pack", "dashboard"]
+      "enum": ["global", "domain", "rulebook", "dashboard"]
     },
     "appliesTo": {
       "type": "object",
       "properties": {
         "domain": { "type": "array", "items": { "type": "string" } },
-        "pack": { "type": "array", "items": { "type": "string" } },
+        "rulebook": { "type": "array", "items": { "type": "string" } },
         "chart": { "type": "array", "items": { "type": "string" } },
         "dashboard": { "type": "array", "items": { "type": "string" } }
       },
@@ -260,3 +260,4 @@
   },
   "additionalProperties": false
 }
+

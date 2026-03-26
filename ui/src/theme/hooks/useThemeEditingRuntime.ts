@@ -220,6 +220,7 @@ export function useThemeEditingRuntime(options: {
     colorDraftByToken,
     themeSaveDraft,
     setThemeSaveDraft,
+    setActiveColorToken,
     hexDraft,
     setHexDraft,
     rgbDraft,

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { ChartContractValidationError } from '../packs/getChartPayload';
-import { getChartPayload } from '../packs/getChartPayload';
-import { PackArtifactNotFoundError } from '../packs/resolvePackPaths';
+import { ChartContractValidationError } from '../rulebooks/getChartPayload';
+import { getChartPayload } from '../rulebooks/getChartPayload';
+import { RulebookArtifactNotFoundError } from '../rulebooks/resolveRulebookPaths';
 
 const chartsRouter = Router();
 
@@ -10,22 +10,22 @@ function getSingleParam(value: string | string[] | undefined, label: string) {
     return value;
   }
 
-  throw new PackArtifactNotFoundError(`Missing or invalid ${label} parameter.`);
+  throw new RulebookArtifactNotFoundError(`Missing or invalid ${label} parameter.`);
 }
 
 // Generic metadata-driven chart route.
-chartsRouter.get('/:domain/:pack/:chart', async (req: Request, res: Response) => {
+chartsRouter.get('/:domain/:rulebook/:chart', async (req: Request, res: Response) => {
   try {
     const payload = await getChartPayload({
       domain: getSingleParam(req.params.domain, 'domain'),
-      pack: getSingleParam(req.params.pack, 'pack'),
+      rulebook: getSingleParam(req.params.rulebook, 'rulebook'),
       chart: getSingleParam(req.params.chart, 'chart'),
       queryParams: req.query as Record<string, unknown>,
     });
 
     res.status(200).json(payload);
   } catch (error) {
-    if (error instanceof PackArtifactNotFoundError) {
+    if (error instanceof RulebookArtifactNotFoundError) {
       res.status(404).json({ error: error.message });
       return;
     }
@@ -44,3 +44,4 @@ chartsRouter.get('/:domain/:pack/:chart', async (req: Request, res: Response) =>
 });
 
 export default chartsRouter;
+

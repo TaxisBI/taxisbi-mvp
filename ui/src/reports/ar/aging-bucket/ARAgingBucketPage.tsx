@@ -13,7 +13,7 @@ import { useBucketEditorState } from './hooks/useBucketEditorState';
 import { useBucketEditorActions } from './hooks/useBucketEditorActions';
 import { useAgingBucketUiState } from './hooks/useAgingBucketUiState';
 import { useDismissLayer } from './hooks/useDismissLayer';
-import { useAgingBucketPackSync } from './hooks/useAgingBucketPackSync';
+import { useAgingBucketRulebookSync } from './hooks/useAgingBucketRulebookSync';
 import { useAgingBucketChartContracts } from './hooks/useAgingBucketChartContracts';
 import { useAgingBucketChartRender } from './hooks/useAgingBucketChartRender';
 import { useAgingBucketPresentation } from './hooks/useAgingBucketPresentation';
@@ -157,7 +157,7 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
     effectiveOperatorOptions,
   });
 
-  useAgingBucketPackSync({
+  useAgingBucketRulebookSync({
     metadataDefaultBuckets,
     canvasSizeOptions,
     canvasSizeMode,
@@ -353,3 +353,4 @@ export default function ARAgingBucketPage({ onOpenThemeBuilder }: ARAgingBucketP
     />
   );
 }
+

@@ -192,7 +192,7 @@ export default function ARAgingBucketChart({
 
     async function loadChart() {
       setErrorMessage(null);
-      const chartPath = `/api/charts/${chartContext.domain}/${chartContext.pack}/${chartContext.chart}`;
+      const chartPath = `/api/charts/${chartContext.domain}/${chartContext.rulebook}/${chartContext.chart}`;
       const initialParams = new URLSearchParams({
         report_date: reportDate,
         buckets: serializedBuckets,
@@ -792,7 +792,7 @@ export default function ARAgingBucketChart({
     };
   }, [
     chartContext.domain,
-    chartContext.pack,
+    chartContext.rulebook,
     chartContext.chart,
     theme,
     reportDate,
@@ -825,3 +825,4 @@ export default function ARAgingBucketChart({
     />
   );
 }
+

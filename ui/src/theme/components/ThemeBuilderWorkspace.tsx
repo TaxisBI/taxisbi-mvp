@@ -976,7 +976,7 @@ export default function ThemeBuilderWorkspace({
                     >
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
-                          {isTypographySectionExpanded ? '▾' : '▸'}
+                          {isTypographySectionExpanded ? 'v' : '>'}
                         </span>
                         <span>Typography</span>
                       </span>
@@ -1094,7 +1094,7 @@ export default function ThemeBuilderWorkspace({
                               >
                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                                   <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
-                                    {isExpanded ? '▾' : '▸'}
+                                    {isExpanded ? 'v' : '>'}
                                   </span>
                                   <span>{section.label}</span>
                                 </span>
@@ -1206,7 +1206,7 @@ export default function ThemeBuilderWorkspace({
                     >
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
-                          {isChartControlsSectionExpanded ? '▾' : '▸'}
+                          {isChartControlsSectionExpanded ? 'v' : '>'}
                         </span>
                         <span>Chart Controls</span>
                       </span>
@@ -1292,7 +1292,7 @@ export default function ThemeBuilderWorkspace({
                             >
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                                 <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
-                                  {isExpanded ? '▾' : '▸'}
+                                  {isExpanded ? 'v' : '>'}
                                 </span>
                                 <span>{group.label}</span>
                               </span>
@@ -1346,7 +1346,7 @@ export default function ThemeBuilderWorkspace({
                     >
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
-                          {isWidthsSectionExpanded ? '▾' : '▸'}
+                          {isWidthsSectionExpanded ? 'v' : '>'}
                         </span>
                         <span>Visual Density</span>
                       </span>
@@ -1403,7 +1403,7 @@ export default function ThemeBuilderWorkspace({
                     >
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
-                          {isColorsSectionExpanded ? '▾' : '▸'}
+                          {isColorsSectionExpanded ? 'v' : '>'}
                         </span>
                         <span>Colors</span>
                       </span>
@@ -1493,7 +1493,7 @@ export default function ThemeBuilderWorkspace({
                             >
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                                 <span style={{ fontSize: 9, opacity: 0.75, lineHeight: 1 }}>
-                                  {isExpanded ? '▾' : '▸'}
+                                  {isExpanded ? 'v' : '>'}
                                 </span>
                                 <span>{folder.label}</span>
                               </span>
@@ -1938,7 +1938,7 @@ export default function ThemeBuilderWorkspace({
                 value={themeSaveDraft.scope}
                 onChange={(event) =>
                   onUpdateThemeSaveDraft({
-                    scope: event.target.value as 'global' | 'domain' | 'pack' | 'dashboard',
+                    scope: event.target.value as 'global' | 'domain' | 'rulebook' | 'dashboard',
                   })
                 }
                 style={{
@@ -1954,7 +1954,7 @@ export default function ThemeBuilderWorkspace({
               >
                 <option value="global">Global</option>
                 <option value="domain">Domain</option>
-                <option value="pack">Pack</option>
+                <option value="rulebook">Rulebook</option>
                 <option value="dashboard">Dashboard</option>
               </select>
             </label>
@@ -2007,3 +2007,4 @@ export default function ThemeBuilderWorkspace({
     </div>
   );
 }
+

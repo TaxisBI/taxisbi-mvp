@@ -122,7 +122,7 @@ export function useAgingBucketChartContracts(options: {
   const chartContext = useMemo(
     () => ({
       domain: 'ar',
-      pack: 'receivable_item',
+      rulebook: 'receivable_item',
       chart: 'aging_by_bucket',
     }),
     []
@@ -179,7 +179,7 @@ export function useAgingBucketChartContracts(options: {
     handleUiThemeResolved: setUiTheme,
     handlePackMetadataResolved: setPackMetadata,
   } satisfies {
-    chartContext: { domain: string; pack: string; chart: string };
+    chartContext: { domain: string; rulebook: string; chart: string };
     uiTheme: ResolvedUiTheme;
     metadataDefaultBuckets: AgingBucketDef[] | null;
     canvasSizeOptions: Array<{ value: CanvasSizeMode; label: string; displayOrder: number }>;
@@ -220,3 +220,4 @@ export function useAgingBucketChartContracts(options: {
     handlePackMetadataResolved: (metadata: ChartPackMetadata) => void;
   };
 }
+

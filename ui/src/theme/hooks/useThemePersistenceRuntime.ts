@@ -59,7 +59,7 @@ export function useThemePersistenceRuntime(options: {
         spec,
         context: {
           domain: themeSaveDraft.domain,
-          pack: themeSaveDraft.pack,
+          rulebook: themeSaveDraft.rulebook,
           chart: themeSaveDraft.chart,
           dashboard: themeSaveDraft.dashboard,
         },
@@ -82,3 +82,4 @@ export function useThemePersistenceRuntime(options: {
     saveGeneratedTheme,
   };
 }
+

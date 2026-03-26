@@ -8,10 +8,10 @@ export type ThemeDef = {
   createdBy?: string;
   displayOrder?: number;
   extends?: string;
-  scope?: 'global' | 'domain' | 'pack' | 'dashboard';
+  scope?: 'global' | 'domain' | 'rulebook' | 'dashboard';
   appliesTo?: {
     domain?: string[];
-    pack?: string[];
+    rulebook?: string[];
     chart?: string[];
     dashboard?: string[];
   };
@@ -21,7 +21,7 @@ export type ThemeDef = {
 
 export type ThemeContext = {
   domain: string;
-  pack: string;
+  rulebook: string;
   chart: string;
   dashboard?: string;
 };
@@ -141,7 +141,7 @@ function themeAppliesToContext(theme: ThemeDef, context: ThemeContext) {
 
   return (
     matchesApplyList(appliesTo.domain, context.domain) &&
-    matchesApplyList(appliesTo.pack, context.pack) &&
+    matchesApplyList(appliesTo.rulebook, context.rulebook) &&
     matchesApplyList(appliesTo.chart, context.chart) &&
     matchesApplyList(appliesTo.dashboard, context.dashboard)
   );
@@ -288,7 +288,7 @@ function toSafeAgingBuckets(input?: AgingBucketInput[]) {
 export async function getAgingChart(reportDateInput?: string, bucketDefsInput?: AgingBucketInput[]) {
   const themeContext: ThemeContext = {
     domain: 'AR',
-    pack: 'Receivable_item',
+    rulebook: 'Receivable_item',
     chart: 'aging_by_bucket',
     dashboard: 'ar-aging-bucket',
   };
@@ -297,12 +297,12 @@ export async function getAgingChart(reportDateInput?: string, bucketDefsInput?: 
 
   const sqlPath = path.resolve(
     process.cwd(),
-    'domains/AR/packs/Receivable_item/queries/aging_by_bucket.sql'
+    'domains/AR/rulebooks/Receivable_item/queries/aging_by_bucket.sql'
   );
 
   const specPath = path.resolve(
     process.cwd(),
-    'domains/AR/packs/Receivable_item/charts/aging_by_bucket.v1.json'
+    'domains/AR/rulebooks/Receivable_item/charts/aging_by_bucket.v1.json'
   );
   const themeRootPath = path.resolve(process.cwd(), 'themes');
 
@@ -336,3 +336,4 @@ export async function getAgingChart(reportDateInput?: string, bucketDefsInput?: 
     buckets: bucketDefs,
   };
 }
+

@@ -1,4 +1,4 @@
-export type ThemeScope = 'global' | 'domain' | 'pack' | 'dashboard';
+export type ThemeScope = 'global' | 'domain' | 'rulebook' | 'dashboard';
 export type ThemePathSegment = string | number;
 
 export type ThemeDefinition = {
@@ -10,7 +10,7 @@ export type ThemeDefinition = {
   extends?: string;
   appliesTo?: {
     domain?: string[];
-    pack?: string[];
+    rulebook?: string[];
     chart?: string[];
     dashboard?: string[];
   };
@@ -28,7 +28,7 @@ export type ThemeOption = {
 
 export type ThemeBuilderContext = {
   domain: string;
-  pack: string;
+  rulebook: string;
   chart: string;
   dashboard: string;
 };
@@ -38,7 +38,7 @@ export type ThemeSaveDraft = {
   key: string;
   scope: ThemeScope;
   domain: string;
-  pack: string;
+  rulebook: string;
   chart: string;
   dashboard: string;
 };
@@ -178,3 +178,4 @@ export type ChartUiThemeContract = {
   tooltipTheme: 'light' | 'dark';
   tooltipStyle: TooltipStyleContract;
 };
+

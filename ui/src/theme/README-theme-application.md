@@ -6,7 +6,7 @@ Themes in TaxisBI are defined generically and can be applied to any chart. The T
 ## How to Apply a Theme to Any Chart
 
 1. **Fetch the ThemeDefinition**
-   - Use the theme registry/API to load the theme for the current domain, pack, chart, or dashboard.
+   - Use the theme registry/API to load the theme for the current domain, rulebook, chart, or dashboard.
 
 2. **Use the Utility**
    - Import and use `applyThemeToChart` from `ui/src/theme/applyThemeToChart.ts`.
@@ -40,3 +40,4 @@ Themes in TaxisBI are defined generically and can be applied to any chart. The T
 
 ## Example
 See `ui/src/reports/ar/aging-bucket/components/ARAgingBucketChart.tsx` for a refactored chart using universal theme consumption.
+

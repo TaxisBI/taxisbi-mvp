@@ -1,8 +1,8 @@
-import fs from 'node:fs/promises';
+﻿import fs from 'node:fs/promises';
 import { parse } from 'yaml';
 import type { BuildChartSpecInput } from '../charts/buildChartSpec';
 import { isSupportedChartType } from '../charts/buildChartSpec';
-import { PackArtifactNotFoundError } from './resolvePackPaths';
+import { RulebookArtifactNotFoundError } from './resolveRulebookPaths';
 
 type RawManifest = {
   charts?: Record<string, unknown>;
@@ -31,7 +31,7 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
-export async function loadPackChartConfig(
+export async function loadRulebookChartConfig(
   manifestPath: string,
   chartName: string
 ): Promise<PackChartMetadata> {
@@ -83,7 +83,7 @@ export async function loadPackChartConfig(
 
   const chartRecord = asRecord(rawChart);
   if (!chartRecord) {
-    throw new PackArtifactNotFoundError(`Invalid chart metadata for chart: ${chartName}`);
+    throw new RulebookArtifactNotFoundError(`Invalid chart metadata for chart: ${chartName}`);
   }
 
   const parameters = readParameters(chartRecord.parameters);
@@ -101,7 +101,7 @@ export async function loadPackChartConfig(
   }
 
   if (!isSupportedChartType(chartType)) {
-    throw new PackArtifactNotFoundError(
+    throw new RulebookArtifactNotFoundError(
       `Unsupported chart type '${String(chartType)}' in ${manifestPath} for chart '${chartName}'.`
     );
   }
@@ -166,3 +166,4 @@ function readParameters(input: unknown): Record<string, PackChartParameterDef> |
 
   return Object.keys(result).length > 0 ? result : null;
 }
+

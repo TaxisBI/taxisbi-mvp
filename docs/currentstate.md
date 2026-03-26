@@ -4,13 +4,13 @@ This document summarizes the current working setup, engineering principles, and 
 
 ## What TaxisBI Is Right Now
 
-TaxisBI is a rules-driven analytics MVP focused on fast iteration over domain packs and chart experiences.
+TaxisBI is a rules-driven analytics MVP focused on fast iteration over domain rulebooks and chart experiences.
 
 Current stack:
 - Backend: Node.js + TypeScript (Express)
 - Database: ClickHouse
 - Frontend: React + Vite + Vega-Lite rendering
-- Pack artifacts: SQL + chart specs + seed/schema files on disk
+- rulebook artifacts: SQL + chart specs + seed/schema files on disk
 
 ## Current Runtime Setup (Local Dev)
 
@@ -32,14 +32,14 @@ This keeps startup simple and makes UI and API iteration faster while the MVP is
 ## Chart Runtime Model (MVP)
 
 The backend now supports a generic chart endpoint:
-- GET /api/charts/:domain/:pack/:chart
+- GET /api/charts/:domain/:rulebook/:chart
 
 Current convention mapping:
-- chart spec: domains/{Domain}/packs/{Pack}/charts/{chart}.vl.json
-- query SQL: domains/{Domain}/packs/{Pack}/queries/{chart}.sql
+- chart spec: domains/{Domain}/rulebooks/{rulebook}/charts/{chart}.vl.json
+- query SQL: domains/{Domain}/rulebooks/{rulebook}/queries/{chart}.sql
 
 Route behavior:
-1. Resolve domain/pack/chart paths from request params.
+1. Resolve domain/rulebook/chart paths from request params.
 2. Load Vega-Lite spec JSON from disk.
 3. Load SQL query from disk.
 4. Execute SQL in ClickHouse (JSONEachRow).
@@ -48,7 +48,7 @@ Route behavior:
    - data
 
 Error behavior:
-- 404 when a pack/chart/spec/query artifact cannot be found.
+- 404 when a rulebook/chart/spec/query artifact cannot be found.
 - 500 when query execution or runtime processing fails.
 
 ## Key Repository Areas
@@ -56,19 +56,19 @@ Error behavior:
 ### Runtime server
 - src/server/index.ts: Express entrypoint, health route, theme routes, chart route wiring.
 - src/server/routes/charts.ts: Generic metadata-driven chart route.
-- src/server/packs/resolvePackPaths.ts: Domain/pack/chart path resolution and artifact path construction.
-- src/server/packs/loadChartSpec.ts: Loads and parses chart spec JSON.
-- src/server/packs/loadQuerySql.ts: Loads SQL text.
-- src/server/packs/getChartPayload.ts: Orchestrates load + query + response payload.
+- src/server/rulebooks/resolveRulebookPaths.ts: Domain/rulebook/chart path resolution and artifact path construction.
+- src/server/rulebooks/loadChartSpec.ts: Loads and parses chart spec JSON.
+- src/server/rulebooks/loadQuerySql.ts: Loads SQL text.
+- src/server/rulebooks/getChartPayload.ts: Orchestrates load + query + response payload.
 - src/server/clickhouse/client.ts: ClickHouse client initialization.
 
-### Domain packs and artifacts
-- domains/: Domain-specific packs and analytics assets.
-- domains/AR/packs/Receivable_item: Current AR MVP pack.
-- schema.sql and seed.sql: Data model and seed setup per pack.
+### Domain rulebooks and artifacts
+- domains/: Domain-specific rulebooks and analytics assets.
+- domains/AR/rulebooks/Receivable_item: Current AR MVP rulebook.
+- schema.sql and seed.sql: Data model and seed setup per rulebook.
 - queries/: SQL artifacts for chart-ready data.
 - charts/: Vega-Lite specs used by the generic runtime.
-- pack.yaml: Pack metadata placeholder for current and future mapping concerns.
+- rulebook.yaml: rulebook metadata placeholder for current and future mapping concerns.
 
 ### UI application
 - ui/src/reports/ar/aging-bucket: Current AR chart page and components.
@@ -86,16 +86,16 @@ Error behavior:
 - docs/react-terms.md: React and UI terminology guide for clearer requests and reviews.
 - docs/uitest.md: UI test-related notes.
 
-## Pack Structure (Current Convention)
+## rulebook Structure (Current Convention)
 
-Example structure in active AR pack:
+Example structure in active AR rulebook:
 - domains/
   - AR/
-    - packs/
+    - rulebooks/
       - Receivable_item/
         - schema.sql
         - seed.sql
-        - pack.yaml
+        - rulebook.yaml
         - queries/
           - aging_by_bucket.sql
         - charts/
@@ -103,16 +103,17 @@ Example structure in active AR pack:
 
 ## What Is Intentionally Not Overbuilt Yet
 
-- No full chart-to-query mapping model in pack.yaml yet (convention-first MVP).
+- No full chart-to-query mapping model in rulebook.yaml yet (convention-first MVP).
 - No separate custom API route per chart.
 - No full containerized API+UI stack yet.
-- No large framework around packs; simple modules by responsibility.
+- No large framework around rulebooks; simple modules by responsibility.
 
 ## Practical Current Workflow
 
 To add a new chart in this MVP model:
-1. Add a SQL file in pack queries with the chart name.
-2. Add a Vega-Lite spec in pack charts with the same chart name.
-3. Call /api/charts/{domain}/{pack}/{chart} from UI.
+1. Add a SQL file in rulebook queries with the chart name.
+2. Add a Vega-Lite spec in rulebook charts with the same chart name.
+3. Call /api/charts/{domain}/{rulebook}/{chart} from UI.
 
 The runtime discovers and executes chart artifacts without adding new TypeScript route handlers.
+

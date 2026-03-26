@@ -58,8 +58,8 @@ function formatThemeScope(scope?: ThemeOption['scope']) {
   if (scope === 'domain') {
     return 'Domain';
   }
-  if (scope === 'pack') {
-    return 'Pack';
+  if (scope === 'rulebook') {
+    return 'Rulebook';
   }
   if (scope === 'dashboard') {
     return 'Dashboard';
@@ -142,7 +142,7 @@ export function parseBucketDefaultsFromMetadata(
         return null;
       }
 
-      const id = typeof entry.id === 'string' && entry.id.trim() ? entry.id : `pack-default-${index}`;
+      const id = typeof entry.id === 'string' && entry.id.trim() ? entry.id : `rulebook-default-${index}`;
       const combinator = entry.combinator === 'OR' ? 'OR' : 'AND';
       const isSpecial = entry.isSpecial === true;
 
@@ -448,3 +448,4 @@ export function resolveRuntimeUiContracts(options: {
     },
   };
 }
+

@@ -1,13 +1,13 @@
-{
+﻿{
   "key": "ember-dark",
   "label": "Ember Dark",
   "createdBy": "Cheech",
   "displayOrder": 3,
-  "scope": "pack",
+  "scope": "RULEBOOK",
   "extends": "dark",
   "appliesTo": {
     "domain": ["AR"],
-    "pack": ["Receivable_item"]
+    "RULEBOOK": ["Receivable_item"]
   },
   "ui": {
     "hoverColor": "#22c55e",
@@ -42,3 +42,4 @@
     ]
   }
 }
+

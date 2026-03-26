@@ -1,10 +1,10 @@
-import fs from 'node:fs/promises';
+﻿import fs from 'node:fs/promises';
 import path from 'node:path';
 
-export class PackArtifactNotFoundError extends Error {
+export class RulebookArtifactNotFoundError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'PackArtifactNotFoundError';
+    this.name = 'RulebookArtifactNotFoundError';
   }
 }
 
@@ -20,7 +20,7 @@ export type ChartArtifactPaths = {
 
 function assertSafeSegment(value: string, label: string) {
   if (!/^[a-z0-9_-]+$/i.test(value)) {
-    throw new PackArtifactNotFoundError(`Invalid ${label} segment.`);
+    throw new RulebookArtifactNotFoundError(`Invalid ${label} segment.`);
   }
 }
 
@@ -31,7 +31,7 @@ async function resolveExistingSegment(parentPath: string, requested: string, lab
   } catch (error) {
     const err = error as NodeJS.ErrnoException;
     if (err.code === 'ENOENT') {
-      throw new PackArtifactNotFoundError(`${label} not found: ${requested}`);
+      throw new RulebookArtifactNotFoundError(`${label} not found: ${requested}`);
     }
     throw error;
   }
@@ -40,26 +40,26 @@ async function resolveExistingSegment(parentPath: string, requested: string, lab
   );
 
   if (!match) {
-    throw new PackArtifactNotFoundError(`${label} not found: ${requested}`);
+    throw new RulebookArtifactNotFoundError(`${label} not found: ${requested}`);
   }
 
   return match.name;
 }
 
-export async function resolvePackPaths(
+export async function resolveRulebookPaths(
   domain: string,
-  pack: string,
+  rulebook: string,
   chart: string,
   workspaceRoot = process.cwd()
 ): Promise<ChartArtifactPaths> {
   assertSafeSegment(domain, 'domain');
-  assertSafeSegment(pack, 'pack');
+  assertSafeSegment(rulebook, 'rulebook');
   assertSafeSegment(chart, 'chart');
 
   const domainsRoot = path.resolve(workspaceRoot, 'domains');
   const domainName = await resolveExistingSegment(domainsRoot, domain, 'Domain');
-  const packsRoot = path.join(domainsRoot, domainName, 'packs');
-  const packName = await resolveExistingSegment(packsRoot, pack, 'Pack');
+  const packsRoot = path.join(domainsRoot, domainName, 'rulebooks');
+  const packName = await resolveExistingSegment(packsRoot, rulebook, 'Rulebook');
 
   const packRootPath = path.join(packsRoot, packName);
   const chartName = chart;
@@ -69,8 +69,9 @@ export async function resolvePackPaths(
     packName,
     chartName,
     packRootPath,
-    packManifestPath: path.join(packRootPath, 'pack.yaml'),
+    packManifestPath: path.join(packRootPath, 'rulebook.yaml'),
     chartSpecPath: path.join(packRootPath, 'charts', `${chartName}.vl.json`),
     querySqlPath: path.join(packRootPath, 'queries', `${chartName}.sql`),
   };
 }
+

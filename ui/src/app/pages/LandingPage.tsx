@@ -44,7 +44,7 @@ const DOMAIN_SECTIONS: DomainSection[] = [
       {
         label: 'Future Domain Starter',
         path: APP_ROUTES.otherStarter,
-        description: 'Placeholder route for additional domain packs and dashboards.',
+        description: 'Placeholder route for additional domain rulebooks and dashboards.',
       },
     ],
   },
@@ -183,7 +183,7 @@ export default function LandingPage() {
                   }}
                 >
                   <span>{section.label}</span>
-                  <span>{isExpanded ? '▾' : '▸'}</span>
+                  <span>{isExpanded ? 'v' : '>'}</span>
                 </button>
 
                 {isExpanded ? (
@@ -220,3 +220,4 @@ export default function LandingPage() {
     </div>
   );
 }
+

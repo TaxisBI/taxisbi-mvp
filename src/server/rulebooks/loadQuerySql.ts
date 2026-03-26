@@ -1,5 +1,5 @@
-import fs from 'node:fs/promises';
-import { PackArtifactNotFoundError } from './resolvePackPaths';
+﻿import fs from 'node:fs/promises';
+import { RulebookArtifactNotFoundError } from './resolveRulebookPaths';
 
 export async function loadQuerySql(queryPath: string): Promise<string> {
   try {
@@ -7,8 +7,9 @@ export async function loadQuerySql(queryPath: string): Promise<string> {
   } catch (error) {
     const err = error as NodeJS.ErrnoException;
     if (err.code === 'ENOENT') {
-      throw new PackArtifactNotFoundError(`Chart query not found: ${queryPath}`);
+      throw new RulebookArtifactNotFoundError(`Chart query not found: ${queryPath}`);
     }
     throw error;
   }
 }
+

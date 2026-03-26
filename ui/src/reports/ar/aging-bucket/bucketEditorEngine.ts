@@ -303,7 +303,7 @@ export function parseDraftBuckets(
     }
 
     if (!allowedOperatorSet.has(bucket.primary.operator)) {
-      throw new Error(`Bucket ${index + 1} primary operator is not allowed by this pack.`);
+      throw new Error(`Bucket ${index + 1} primary operator is not allowed by this rulebook.`);
     }
 
     const conditions: Array<{ operator: BucketOperator; value: number }> = [
@@ -319,7 +319,7 @@ export function parseDraftBuckets(
       }
 
       if (!allowedOperatorSet.has(bucket.secondary.operator)) {
-        throw new Error(`Bucket ${index + 1} secondary operator is not allowed by this pack.`);
+        throw new Error(`Bucket ${index + 1} secondary operator is not allowed by this rulebook.`);
       }
 
       conditions.push({
@@ -390,3 +390,4 @@ export function buildValidationSuggestions(
 
   return suggestions;
 }
+

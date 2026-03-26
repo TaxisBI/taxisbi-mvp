@@ -246,16 +246,16 @@ export function collectStyleStudioTokens(
 
 export function createDefaultThemeSaveDraft(context: {
   domain: string;
-  pack: string;
+  rulebook: string;
   chart: string;
   dashboard: string;
 }): ThemeSaveDraft {
   return {
     label: '',
     key: '',
-    scope: 'pack',
+    scope: 'rulebook',
     domain: context.domain,
-    pack: context.pack,
+    rulebook: context.rulebook,
     chart: context.chart,
     dashboard: context.dashboard,
   };
@@ -274,3 +274,4 @@ export function resolveThemeBuilderUiTheme(selectedUi: Record<string, unknown>):
     statusDanger: String(selectedUi.statusDanger ?? '#dc2626'),
   };
 }
+

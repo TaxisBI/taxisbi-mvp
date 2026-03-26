@@ -1,8 +1,8 @@
-import { useEffect, type Dispatch, type SetStateAction } from 'react';
+﻿import { useEffect, type Dispatch, type SetStateAction } from 'react';
 import type { AgingBucketDef, CanvasSizeMode } from '../types';
 import { toDraft, type BucketCombinator, type BucketDraft, type BucketOperator } from '../bucketEditorEngine';
 
-export function useAgingBucketPackSync(options: {
+export function useAgingBucketRulebookSync(options: {
   metadataDefaultBuckets: AgingBucketDef[] | null;
   canvasSizeOptions: Array<{ value: CanvasSizeMode }>;
   canvasSizeMode: CanvasSizeMode;
@@ -114,3 +114,4 @@ export function useAgingBucketPackSync(options: {
     setBuckets,
   ]);
 }
+

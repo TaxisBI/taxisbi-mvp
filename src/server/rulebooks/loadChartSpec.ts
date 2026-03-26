@@ -1,5 +1,5 @@
-import fs from 'node:fs/promises';
-import { PackArtifactNotFoundError } from './resolvePackPaths';
+﻿import fs from 'node:fs/promises';
+import { RulebookArtifactNotFoundError } from './resolveRulebookPaths';
 
 export async function loadChartSpec(specPath: string): Promise<Record<string, unknown>> {
   try {
@@ -8,8 +8,9 @@ export async function loadChartSpec(specPath: string): Promise<Record<string, un
   } catch (error) {
     const err = error as NodeJS.ErrnoException;
     if (err.code === 'ENOENT') {
-      throw new PackArtifactNotFoundError(`Chart spec not found: ${specPath}`);
+      throw new RulebookArtifactNotFoundError(`Chart spec not found: ${specPath}`);
     }
     throw error;
   }
 }
+

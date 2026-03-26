@@ -1,11 +1,11 @@
-import { clickhouse } from '../clickhouse/client';
+﻿import { clickhouse } from '../clickhouse/client';
 import path from 'node:path';
 import { buildChartSpec } from '../charts/buildChartSpec';
 import { loadBuiltInThemes } from '../routes/agingChart';
 import { loadChartSpec } from './loadChartSpec';
-import { loadPackChartConfig } from './loadPackChartConfig';
+import { loadRulebookChartConfig } from './loadRulebookChartConfig';
 import { loadQuerySql } from './loadQuerySql';
-import { resolvePackPaths } from './resolvePackPaths';
+import { resolveRulebookPaths } from './resolveRulebookPaths';
 
 export class ChartContractValidationError extends Error {
   readonly contractErrors: string[];
@@ -273,18 +273,18 @@ function normalizeQueryParams(input: Record<string, unknown>) {
 
 export async function getChartPayload(args: {
   domain: string;
-  pack: string;
+  rulebook: string;
   chart: string;
   queryParams?: Record<string, unknown>;
 }): Promise<ChartPayload> {
-  const paths = await resolvePackPaths(args.domain, args.pack, args.chart);
+  const paths = await resolveRulebookPaths(args.domain, args.rulebook, args.chart);
   const themeRootPath = path.resolve(process.cwd(), 'themes');
   const [chartMetadata, sql, themes] = await Promise.all([
-    loadPackChartConfig(paths.packManifestPath, paths.chartName),
+    loadRulebookChartConfig(paths.packManifestPath, paths.chartName),
     loadQuerySql(paths.querySqlPath),
     loadBuiltInThemes(themeRootPath, {
       domain: paths.domainName,
-      pack: paths.packName,
+      rulebook: paths.packName,
       chart: paths.chartName,
     }),
   ]);
@@ -631,3 +631,4 @@ function filterAllowedQueryParams(
 
   return filtered;
 }
+

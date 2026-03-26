@@ -19,7 +19,7 @@ type AgingBucketInput = {
 	conditions: AgingBucketConditionInput[];
 };
 
-type ThemeScope = "global" | "domain" | "pack" | "dashboard";
+type ThemeScope = "global" | "domain" | "rulebook" | "dashboard";
 
 type ThemeSaveRequest = {
 	key?: unknown;
@@ -32,7 +32,7 @@ type ThemeSaveRequest = {
 	displayOrder?: unknown;
 	context?: {
 		domain?: unknown;
-		pack?: unknown;
+		rulebook?: unknown;
 		chart?: unknown;
 		dashboard?: unknown;
 	};
@@ -47,7 +47,7 @@ type ThemeDef = {
 	scope: ThemeScope;
 	appliesTo?: {
 		domain?: string[];
-		pack?: string[];
+		rulebook?: string[];
 		chart?: string[];
 		dashboard?: string[];
 	};
@@ -151,7 +151,7 @@ function parseAgingBuckets(input: unknown): AgingBucketInput[] | undefined {
 }
 
 function isThemeScope(value: unknown): value is ThemeScope {
-	return value === "global" || value === "domain" || value === "pack" || value === "dashboard";
+	return value === "global" || value === "domain" || value === "rulebook" || value === "dashboard";
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -195,7 +195,7 @@ function buildThemeTarget(
 	rootPath: string,
 	scope: ThemeScope,
 	themeKey: string,
-	context: { domain: string; pack: string; chart: string; dashboard: string }
+	context: { domain: string; rulebook: string; chart: string; dashboard: string }
 ) {
 	if (scope === "global") {
 		return {
@@ -216,12 +216,12 @@ function buildThemeTarget(
 		};
 	}
 
-	if (scope === "pack") {
+	if (scope === "rulebook") {
 		return {
-			filePath: path.join(rootPath, "3_pack", context.domain, context.pack, `${themeKey}.json`),
+			filePath: path.join(rootPath, "3_rulebook", context.domain, context.rulebook, `${themeKey}.json`),
 			appliesTo: {
 				domain: [context.domain],
-				pack: [context.pack],
+				rulebook: [context.rulebook],
 				chart: [context.chart],
 			},
 		};
@@ -243,7 +243,7 @@ async function createThemeFile(payload: ThemeSaveRequest): Promise<ThemeDef> {
 	}
 
 	if (!isThemeScope(payload.scope)) {
-		throw new Error("Theme scope must be one of: global, domain, pack, dashboard.");
+		throw new Error("Theme scope must be one of: global, domain, rulebook, dashboard.");
 	}
 
 	if (!isObject(payload.ui)) {
@@ -257,7 +257,7 @@ async function createThemeFile(payload: ThemeSaveRequest): Promise<ThemeDef> {
 
 	const context = {
 		domain: toSafeThemeSegment(payload.context?.domain ?? "AR", "Domain"),
-		pack: toSafeThemeSegment(payload.context?.pack ?? "Receivable_item", "Pack"),
+		rulebook: toSafeThemeSegment(payload.context?.rulebook ?? "Receivable_item", "rulebook"),
 		chart: toSafeThemeSegment(payload.context?.chart ?? "aging_by_bucket", "Chart"),
 		dashboard: toSafeThemeSegment(payload.context?.dashboard ?? "ar-aging-bucket", "Dashboard"),
 	};
@@ -316,7 +316,7 @@ app.get("/api/themes", async (req: Request, res: Response) => {
 	try {
 		const context: ThemeContext = {
 			domain: toThemeQuerySegment(req.query.domain, "AR", "Domain"),
-			pack: toThemeQuerySegment(req.query.pack, "Receivable_item", "Pack"),
+			rulebook: toThemeQuerySegment(req.query.rulebook, "Receivable_item", "rulebook"),
 			chart: toThemeQuerySegment(req.query.chart, "aging_by_bucket", "Chart"),
 			dashboard: toThemeQuerySegment(req.query.dashboard, "ar-aging-bucket", "Dashboard"),
 		};
@@ -357,3 +357,4 @@ app.post("/api/themes", async (req: Request, res: Response) => {
 app.listen(port, () => {
 	console.log(`Server listening on port ${port}`);
 });
+

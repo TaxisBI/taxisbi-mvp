@@ -8,7 +8,7 @@ import type {
 } from '../types';
 
 type AgingBucketChartHostProps = {
-  chartContext: { domain: string; pack: string; chart: string };
+  chartContext: { domain: string; rulebook: string; chart: string };
   theme: string;
   reportDate: string;
   buckets: AgingBucketDef[];
@@ -22,3 +22,4 @@ type AgingBucketChartHostProps = {
 export default function AgingBucketChartHost(props: AgingBucketChartHostProps) {
   return <ARAgingBucketChart {...props} />;
 }
+

@@ -13,7 +13,7 @@ export type CanvasSizeMode =
 export type ThemeOption = {
   key: string;
   label: string;
-  scope?: 'global' | 'domain' | 'pack' | 'dashboard';
+  scope?: 'global' | 'domain' | 'rulebook' | 'dashboard';
   createdBy?: string;
   displayOrder?: number;
 };
@@ -21,13 +21,13 @@ export type ThemeOption = {
 export type ThemeDefinition = {
   key?: string;
   label?: string;
-  scope?: 'global' | 'domain' | 'pack' | 'dashboard';
+  scope?: 'global' | 'domain' | 'rulebook' | 'dashboard';
   createdBy?: string;
   displayOrder?: number;
   extends?: string;
   appliesTo?: {
     domain?: string[];
-    pack?: string[];
+    rulebook?: string[];
     chart?: string[];
     dashboard?: string[];
   };
@@ -53,7 +53,7 @@ export type ChartPackMetadata = {
 
 export type ChartContext = {
   domain: string;
-  pack: string;
+  rulebook: string;
   chart: string;
 };
 
@@ -67,3 +67,4 @@ export type AgingBucketDef = {
     value: number;
   }>;
 };
+
