@@ -1,3 +1,7 @@
+-- Rulebook dependency convention:
+-- Rulebook queries should target semantic_* datasets and should not read landing_* tables directly.
+-- Current MVP table references are preserved in this refactor (no logic changes).
+
 WITH
     {report_date:Date} AS report_date,
 

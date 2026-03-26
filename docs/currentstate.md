@@ -2,6 +2,27 @@
 
 This document summarizes the current working setup, engineering principles, and key repository areas for the TaxisBI MVP.
 
+## Dataset Lifecycle Architecture (Scaffolded)
+
+The canonical dataset lifecycle is now:
+
+Source Data
+-> Landing Layer
+-> Certification Layer
+-> Semantic Dataset Layer
+-> Rulebook Execution Layer
+-> Rendered Output
+
+Layer definitions:
+- Landing Layer: Raw incoming data.
+- Certification Layer: Dataset readiness checks and invariant validation.
+- Semantic Dataset Layer: Trusted promoted business datasets used by rulebooks.
+- Rulebooks: Constrained analytics logic executed against semantic datasets.
+
+Current implementation status:
+- `landing/`, `certification/`, and `semantic/` directory scaffolding now exists.
+- These layers are placeholders only; no ingestion, certification, or promotion pipeline logic has been implemented yet.
+
 ## What TaxisBI Is Right Now
 
 TaxisBI is a rules-driven analytics MVP focused on fast iteration over domain rulebooks and chart experiences.
@@ -69,6 +90,23 @@ Error behavior:
 - queries/: SQL artifacts for chart-ready data.
 - charts/: Vega-Lite specs used by the generic runtime.
 - rulebook.yaml: rulebook metadata placeholder for current and future mapping concerns.
+- landing/: Raw data landing scaffold (no pipeline logic yet).
+- certification/: Dataset certification scaffold (no validation logic yet).
+- semantic/: Promoted semantic dataset scaffold (no promotion logic yet).
+- meta/: Certification metadata scaffold (no metadata jobs yet).
+
+## Schema Naming Conventions (Prepared)
+
+Future database schemas follow this naming pattern:
+- `landing_*`: Raw ingestion tables.
+- `semantic_*`: Trusted promoted datasets.
+- `rulebook_*`: Rulebook execution tables or projections.
+- `meta_*`: Certification metadata.
+
+Planned metadata namespace objects (not implemented yet):
+- `meta.certification_runs`
+- `meta.certification_results`
+- `meta.dataset_certifications`
 
 ### UI application
 - ui/src/reports/ar/aging-bucket: Current AR chart page and components.
@@ -116,4 +154,8 @@ To add a new chart in this MVP model:
 3. Call /api/charts/{domain}/{rulebook}/{chart} from UI.
 
 The runtime discovers and executes chart artifacts without adding new TypeScript route handlers.
+
+Rulebook dependency convention:
+- Rulebooks are expected to read from semantic datasets, not landing datasets.
+- Existing MVP query behavior is unchanged in this refactor.
 

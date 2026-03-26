@@ -280,11 +280,11 @@ export async function getChartPayload(args: {
   const paths = await resolveRulebookPaths(args.domain, args.rulebook, args.chart);
   const themeRootPath = path.resolve(process.cwd(), 'themes');
   const [chartMetadata, sql, themes] = await Promise.all([
-    loadRulebookChartConfig(paths.packManifestPath, paths.chartName),
+    loadRulebookChartConfig(paths.rulebookManifestPath, paths.chartName),
     loadQuerySql(paths.querySqlPath),
     loadBuiltInThemes(themeRootPath, {
       domain: paths.domainName,
-      rulebook: paths.packName,
+      rulebook: paths.rulebookName,
       chart: paths.chartName,
     }),
   ]);

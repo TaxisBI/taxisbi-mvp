@@ -33,9 +33,28 @@ Suggested readiness triggers:
 
 ## Future Work Checklist
 
+## Dataset Lifecycle Expansion
+
+Lifecycle target:
+- Source Data -> Landing -> Certification -> Semantic Dataset -> Rulebook -> Rendered Output
+
+Scaffolded now (no implementation yet):
+- `domains/*/landing/`
+- `domains/*/certification/`
+- `domains/*/semantic/`
+- `meta/`
+
+Planned metadata namespace objects:
+- `meta.certification_runs`
+- `meta.certification_results`
+- `meta.dataset_certifications`
+
 - [ ] Define container boundaries for API, UI, and data services.
 - [ ] Add Dockerfiles for API and UI.
 - [ ] Extend compose for full-stack local bring-up.
 - [ ] Add production image build and tagging strategy.
 - [ ] Add health checks and startup dependency ordering.
 - [ ] Add documented runbooks for local, staging, and production.
+- [ ] Add landing ingestion flows.
+- [ ] Add certification run/result workflows.
+- [ ] Add semantic dataset promotion workflows.

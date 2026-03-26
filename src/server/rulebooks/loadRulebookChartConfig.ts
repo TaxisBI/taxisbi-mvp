@@ -8,7 +8,7 @@ type RawManifest = {
   charts?: Record<string, unknown>;
 };
 
-export type PackChartParameterDef = {
+export type RulebookChartParameterDef = {
   type: string;
   uiControl?: string;
   label?: string;
@@ -17,10 +17,10 @@ export type PackChartParameterDef = {
   default?: unknown;
 };
 
-export type PackChartMetadata = {
+export type RulebookChartMetadata = {
   chartBuilderInput: BuildChartSpecInput | null;
   allowedQueryParams: string[] | null;
-  parameters: Record<string, PackChartParameterDef> | null;
+  parameters: Record<string, RulebookChartParameterDef> | null;
   runtime: Record<string, unknown> | null;
 };
 
@@ -34,7 +34,7 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 export async function loadRulebookChartConfig(
   manifestPath: string,
   chartName: string
-): Promise<PackChartMetadata> {
+): Promise<RulebookChartMetadata> {
   let manifestText = '';
 
   try {
@@ -127,7 +127,7 @@ export async function loadRulebookChartConfig(
 
 function readAllowedQueryParams(
   input: unknown,
-  parameters: Record<string, PackChartParameterDef> | null
+  parameters: Record<string, RulebookChartParameterDef> | null
 ): string[] | null {
   if (Array.isArray(input)) {
     const values = input.filter((value): value is string => typeof value === 'string' && !!value.trim());
@@ -141,13 +141,13 @@ function readAllowedQueryParams(
   return null;
 }
 
-function readParameters(input: unknown): Record<string, PackChartParameterDef> | null {
+function readParameters(input: unknown): Record<string, RulebookChartParameterDef> | null {
   const record = asRecord(input);
   if (!record) {
     return null;
   }
 
-  const result: Record<string, PackChartParameterDef> = {};
+  const result: Record<string, RulebookChartParameterDef> = {};
   for (const [key, value] of Object.entries(record)) {
     const paramRecord = asRecord(value);
     if (!paramRecord || typeof paramRecord.type !== 'string' || !paramRecord.type.trim()) {

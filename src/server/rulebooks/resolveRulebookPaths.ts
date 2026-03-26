@@ -10,10 +10,10 @@ export class RulebookArtifactNotFoundError extends Error {
 
 export type ChartArtifactPaths = {
   domainName: string;
-  packName: string;
+  rulebookName: string;
   chartName: string;
-  packRootPath: string;
-  packManifestPath: string;
+  rulebookRootPath: string;
+  rulebookManifestPath: string;
   chartSpecPath: string;
   querySqlPath: string;
 };
@@ -58,20 +58,20 @@ export async function resolveRulebookPaths(
 
   const domainsRoot = path.resolve(workspaceRoot, 'domains');
   const domainName = await resolveExistingSegment(domainsRoot, domain, 'Domain');
-  const packsRoot = path.join(domainsRoot, domainName, 'rulebooks');
-  const packName = await resolveExistingSegment(packsRoot, rulebook, 'Rulebook');
+  const rulebooksRoot = path.join(domainsRoot, domainName, 'rulebooks');
+  const rulebookName = await resolveExistingSegment(rulebooksRoot, rulebook, 'Rulebook');
 
-  const packRootPath = path.join(packsRoot, packName);
+  const rulebookRootPath = path.join(rulebooksRoot, rulebookName);
   const chartName = chart;
 
   return {
     domainName,
-    packName,
+    rulebookName,
     chartName,
-    packRootPath,
-    packManifestPath: path.join(packRootPath, 'rulebook.yaml'),
-    chartSpecPath: path.join(packRootPath, 'charts', `${chartName}.vl.json`),
-    querySqlPath: path.join(packRootPath, 'queries', `${chartName}.sql`),
+    rulebookRootPath,
+    rulebookManifestPath: path.join(rulebookRootPath, 'rulebook.yaml'),
+    chartSpecPath: path.join(rulebookRootPath, 'charts', `${chartName}.vl.json`),
+    querySqlPath: path.join(rulebookRootPath, 'queries', `${chartName}.sql`),
   };
 }
 
