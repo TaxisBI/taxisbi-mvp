@@ -1,8 +1,7 @@
 ---
 description: "Use when editing backend runtime files under src. Covers API safety, deterministic behavior, and non-breaking refactor expectations for this repository."
 name: "Runtime API Scoped Guidance"
-applyTo:
-  - "src/**/*.ts"
+applyTo: "src/**/*.ts"
 ---
 # Runtime API Scoped Guidance
 

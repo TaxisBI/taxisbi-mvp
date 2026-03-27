@@ -1,10 +1,7 @@
 ---
 description: "Use when editing UI code in the ui folder, including TypeScript UI files and HTML shell content. Enforces constrained UX patterns and avoids open-ended BI authoring behavior."
 name: "UI Scoped Guidance"
-applyTo:
-  - "ui/**/*.ts"
-  - "ui/**/*.tsx"
-  - "ui/**/*.html"
+applyTo: "ui/**/*.ts, ui/**/*.tsx, ui/**/*.html"
 ---
 # UI Scoped Guidance
 

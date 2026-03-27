@@ -1,13 +1,7 @@
 ---
 description: "Use when editing rulebook SQL/YAML artifacts, data naming conventions, or lifecycle architecture assets in rulebooks and related docs."
 name: "Rulebook and Data Scoped Guidance"
-applyTo:
-  - "rulebooks/**/*.sql"
-  - "rulebooks/**/*.yaml"
-  - "rulebooks/**/*.yml"
-  - "rulebooks/**/*.json"
-  - "docs/currentstate.md"
-  - "docs/futurestate.md"
+applyTo: "rulebooks/**/*.sql, rulebooks/**/*.yaml, rulebooks/**/*.yml, rulebooks/**/*.json, docs/currentstate.md, docs/futurestate.md"
 ---
 # Rulebook and Data Scoped Guidance
 
