@@ -8,9 +8,16 @@ Branch baseline: `docs/harvest-starter-pack`
 This document is the implementation companion to the harvest notes.
 
 Goal:
-- Give you a near turn-key blueprint for building a deterministic React + Vega + ClickHouse reporting runtime at work.
+- Give you a near turn-key blueprint for building a deterministic React + Vega + ClickHouse replacement for existing Power BI reports at work.
 - Convert architecture patterns into executable scaffolding decisions.
 - Include guardrails so your implementation does not drift into ad hoc BI behavior.
+
+Working assumptions for 9-5:
+- You already have known page layouts and known report outcomes from Power BI.
+- Initial functional areas are:
+  - JE (Journal Entry)
+  - Deposits
+- The implementation should prioritize stable page templates and governed report contracts over building flexible authoring tools.
 
 ## 2) What Was Fixed In This Branch Before Hand-Off
 
@@ -62,7 +69,7 @@ The following mechanical issues from the first harvest pass were closed directly
 Keep these as hard constraints:
 
 1. Report runner, not query builder.
-2. Rulebook/report logic reads semantic datasets only.
+2. Report logic reads trusted, business-ready datasets only.
 3. Runtime behavior is contract-driven and deterministic.
 4. UI controls are bounded by metadata contracts.
 5. SQL generation is tokenized and validated, never free-form from UI text.
@@ -71,7 +78,7 @@ Keep these as hard constraints:
 
 ```mermaid
 flowchart LR
-  A[React Report Page] --> B[GET report metadata]
+  A[React Report Page Template] --> B[GET report metadata]
   A --> C[POST report run payload]
   B --> D[Metadata Contract Cache]
   C --> E[Request Validator]
@@ -88,7 +95,7 @@ flowchart LR
 
 ## 5) Starter Folder Blueprint
 
-Use this structure as your first commit skeleton:
+Use this structure as your first commit skeleton. Treat names as examples you can align to JE/Deposits program language.
 
 ```text
 src/
@@ -126,8 +133,14 @@ ui/
       routes.ts
       App.tsx
     reports/
-      ar/
-        aging-bucket/
+      je/
+        journal-entry-overview/
+          page/
+          hooks/
+          components/
+          utils/
+      deposits/
+        deposits-overview/
           page/
           hooks/
           components/
@@ -142,6 +155,9 @@ ui/
 ```
 
 ## 6) API Contracts You Can Lift
+
+9-5 naming note:
+- You can model `reportId` as a stable key from your Power BI migration inventory (for example, `je_monthly_variance`, `deposits_daily_summary`).
 
 ### 6.1 Report metadata response
 
@@ -169,7 +185,7 @@ type ReportMetadataResponse = {
 
 ```ts
 type ReportRunRequest = {
-  reportId: 'aging_by_bucket';
+  reportId: 'je_monthly_variance' | 'deposits_daily_summary';
   params: {
     report_date: string;
     buckets?: string;
@@ -264,6 +280,9 @@ Use this separation model:
 
 This keeps big pages testable and maintainable.
 
+For your migration program:
+- Reuse the same hook structure across JE and Deposits pages so each migrated Power BI page has a predictable implementation pattern.
+
 ## 10) Vega Runtime Pattern
 
 Recommended behavior:
@@ -345,11 +364,11 @@ Minimum adapter policy:
 Week 1:
 1. backend scaffold + report metadata/load/validate path
 2. clickhouse adapter + query guard settings
-3. first report route with tokenized SQL compile
+3. first JE report route with tokenized SQL compile
 4. initial theme loader + resolver
 
 Week 2:
-1. React report page + hook orchestration
+1. React report pages for JE and Deposits + shared hook orchestration
 2. bucket editor or equivalent bounded control
 3. Vega render wrapper + theme application
 4. contract tests + integration tests + doc hardening

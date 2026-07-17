@@ -18,18 +18,33 @@ What is implemented and production-useful:
 - Theme builder workflow and save endpoint.
 
 Primary reusable value for your job:
-- This is a very transferable model for "governed report runtime" (not open-ended BI).
+- This is a transferable model for a governed Power BI replacement program where page layouts and report intent are already known.
+
+### 1.1 9-5 Reframing (Power BI Replacement)
+
+For your implementation context, treat this repo as a pattern library, not a strict folder blueprint.
+
+Recommended framing:
+- Start from known Power BI pages/reports and preserve their business intent.
+- Use fixed page layouts (no free-form report builder UX).
+- Keep a governed query contract per report page.
+- Organize report inventory under two functional areas first:
+  - JE (Journal Entry)
+  - Deposits
+
+Note:
+- "domain/rulebook" terms in this document are implementation labels from this repo; in your 9-5, you can map these to "functional area/report definition" without changing the core governance pattern.
 
 ## 2) End-to-End Architecture Map
 
 ```mermaid
 flowchart LR
-  U[React Page] --> R[GET /api/charts/:domain/:rulebook/:chart]
-  R --> O[getChartPayload orchestrator]
-  O --> P[resolveRulebookPaths]
-  O --> M[loadRulebookChartConfig YAML]
+  U[Known Report Page] --> R[GET /api/reports/:area/:reportId]
+  R --> O[getReportPayload orchestrator]
+  O --> P[resolveReportDefinition]
+  O --> M[loadReportConfig YAML/JSON]
   O --> Q[loadQuerySql]
-  O --> T[resolveBucketRuntimeSql tokens]
+  O --> T[resolveRuntimeSql tokens]
   O --> S[buildChartSpec or loadChartSpec]
   O --> H[loadBuiltInThemes]
   O --> C[ClickHouse query]
@@ -40,14 +55,18 @@ flowchart LR
 
 Core runtime flow:
 1. Route validates path params.
-2. Runtime resolves artifact files using case-insensitive folder matching.
-3. Rulebook YAML defines runtime contract, allowed query params, and chart metadata.
+2. Runtime resolves report definition assets deterministically.
+3. Report config defines query contract, allowed params, and visualization metadata.
 4. SQL template tokens are replaced with validated bucket expressions.
 5. Query runs in ClickHouse with `query_params`.
 6. API returns `spec`, `data`, `parameters`, `runtime`, `themes`, `defaultTheme`.
 7. UI applies selected theme, merges spec overrides, renders with Vega.
 
 ## 3) Backend Mechanics Harvest
+
+9-5 interpretation tip:
+- Wherever this section says "rulebook", read it as "report definition".
+- Wherever this section says "domain", read it as "functional area" (JE or Deposits).
 
 ### 3.1 API surface and boundaries
 
@@ -79,6 +98,7 @@ Resolved file conventions:
 
 Why this matters:
 - You get governed discoverability without adding a custom endpoint per report.
+- For your 9-5, this maps cleanly to known report inventory under JE and Deposits.
 
 ### 3.3 YAML-driven chart contract and metadata
 
@@ -345,6 +365,18 @@ Important for planning your implementation:
 - This is still acceptable for defense-in-depth, but formal type-sharing between backend and frontend would reduce duplicate contract logic over time.
 
 ## 10) Practical Implementation Blueprint For Your 9-5
+
+### 10.0 Program framing for migration from Power BI
+
+Use a layout-first migration strategy:
+1. Inventory existing Power BI pages and visuals.
+2. Define target pages with locked layout templates.
+3. Define one governed query contract per visual/report panel.
+4. Group implementation work into two functional areas:
+  - JE
+  - Deposits
+
+Do not over-index on reproducing this repo's folder names exactly; preserve the governance mechanics, not literal naming.
 
 ### 10.1 Suggested service module layout
 
