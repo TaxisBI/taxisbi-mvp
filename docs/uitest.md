@@ -59,7 +59,7 @@ Expected API base URL:
 
 Primary chart endpoint:
 
-- `http://localhost:3000/api/charts/aging-by-bucket`
+- `http://localhost:3000/api/charts/ar/receivable_item/aging_by_bucket`
 
 ## 4) Start UI
 
@@ -89,7 +89,7 @@ Invoke-WebRequest -Uri "http://localhost:3000/health" -UseBasicParsing
 Chart payload check:
 
 ```powershell
-Invoke-WebRequest -Uri "http://localhost:3000/api/charts/aging-by-bucket" -UseBasicParsing
+Invoke-WebRequest -Uri "http://localhost:3000/api/charts/ar/receivable_item/aging_by_bucket" -UseBasicParsing
 ```
 
 ## Stop processes

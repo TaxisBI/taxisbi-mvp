@@ -31,6 +31,76 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
+function throwManifestError(manifestPath: string, chartName: string, message: string): never {
+  throw new Error(`Invalid chart metadata in ${manifestPath} for chart '${chartName}': ${message}`);
+}
+
+function assertNoCommonTypos(
+  chartRecord: Record<string, unknown>,
+  manifestPath: string,
+  chartName: string
+) {
+  const typoMap: Record<string, string> = {
+    parameteres: 'parameters',
+    allowedQueryParam: 'allowedQueryParams',
+    allowed_query_params: 'allowedQueryParams',
+    queryParams: 'runtime.queryParams',
+    sqlToken: 'runtime.sqlTokens',
+  };
+
+  for (const [typo, expected] of Object.entries(typoMap)) {
+    if (typo in chartRecord) {
+      throwManifestError(manifestPath, chartName, `found '${typo}'. Did you mean '${expected}'?`);
+    }
+  }
+}
+
+function assertParametersShape(
+  parameters: unknown,
+  manifestPath: string,
+  chartName: string
+) {
+  if (parameters === undefined || parameters === null) {
+    return;
+  }
+
+  const record = asRecord(parameters);
+  if (!record) {
+    throwManifestError(manifestPath, chartName, `'parameters' must be an object.`);
+  }
+
+  for (const [key, value] of Object.entries(record)) {
+    const parameter = asRecord(value);
+    if (!parameter) {
+      throwManifestError(manifestPath, chartName, `parameter '${key}' must be an object.`);
+    }
+
+    if (typeof parameter.type !== 'string' || !parameter.type.trim()) {
+      throwManifestError(manifestPath, chartName, `parameter '${key}' must include non-empty string 'type'.`);
+    }
+  }
+}
+
+function assertAllowedQueryParamsShape(
+  allowedQueryParams: unknown,
+  manifestPath: string,
+  chartName: string
+) {
+  if (allowedQueryParams === undefined || allowedQueryParams === null) {
+    return;
+  }
+
+  if (!Array.isArray(allowedQueryParams)) {
+    throwManifestError(manifestPath, chartName, `'allowedQueryParams' must be an array of strings.`);
+  }
+
+  for (const value of allowedQueryParams) {
+    if (typeof value !== 'string' || !value.trim()) {
+      throwManifestError(manifestPath, chartName, `'allowedQueryParams' must contain only non-empty strings.`);
+    }
+  }
+}
+
 export async function loadRulebookChartConfig(
   manifestPath: string,
   chartName: string
@@ -85,6 +155,10 @@ export async function loadRulebookChartConfig(
   if (!chartRecord) {
     throw new RulebookArtifactNotFoundError(`Invalid chart metadata for chart: ${chartName}`);
   }
+
+  assertNoCommonTypos(chartRecord, manifestPath, chartName);
+  assertParametersShape(chartRecord.parameters, manifestPath, chartName);
+  assertAllowedQueryParamsShape(chartRecord.allowedQueryParams, manifestPath, chartName);
 
   const parameters = readParameters(chartRecord.parameters);
   const allowedQueryParams = readAllowedQueryParams(chartRecord.allowedQueryParams, parameters);
