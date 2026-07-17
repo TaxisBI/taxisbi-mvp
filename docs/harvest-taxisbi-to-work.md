@@ -326,23 +326,23 @@ High-priority imports:
 
 Important for planning your implementation:
 
-1. Query timeout and hard budget are not enforced in ClickHouse client.
-- Add timeout, max rows, and query budget guard in your implementation.
+1. Query timeout and hard budget enforcement is now implemented on this branch.
+- Added request timeout and per-query ClickHouse settings (`max_execution_time`, `max_result_rows`, overflow throw modes).
 
-2. YAML parsing has no schema validation.
-- Typos in manifest keys can silently degrade behavior.
+2. YAML mechanical validation is now tightened on this branch.
+- Added typo detection and stricter shape checks for chart metadata keys, parameters, and allowed query params.
 
-3. Bucket validation logic appears in more than one place.
-- Similar parse/validate logic exists in server index helpers and chart payload logic.
+3. Backend bucket runtime logic deduplication is now implemented on this branch.
+- Shared parser/validator/expression compiler module now powers both generic chart payload and aging chart route.
 
-4. UI docs include stale endpoint examples.
-- `docs/uitest.md` references `/api/charts/aging-by-bucket` while runtime route is now parameterized.
+4. UI test doc endpoint drift is now fixed on this branch.
+- `docs/uitest.md` now uses parameterized route examples.
 
-5. Theme inheritance cycle handling is runtime-resolve based.
-- Add explicit load-time cycle validation for stronger guarantees.
+5. Theme inheritance cycle detection is now implemented on this branch.
+- Theme loader validates inheritance graph for cycles before hydration.
 
-6. Frontend validates many runtime contracts itself.
-- Good for safety, but it indicates backend schema guarantees are not fully formalized.
+6. Residual architectural risk: frontend still performs extensive runtime contract assertions.
+- This is still acceptable for defense-in-depth, but formal type-sharing between backend and frontend would reduce duplicate contract logic over time.
 
 ## 10) Practical Implementation Blueprint For Your 9-5
 
@@ -433,4 +433,4 @@ Confidence is high because this harvest is based on concrete implemented files i
 What is still intentionally not complete in this repo:
 - full landing/certification/semantic pipelines are scaffolded but not implemented
 - generalized plugin system for unlimited chart types is not present
-- explicit backend-enforced query budgets are not yet built
+- shared backend/frontend generated contract types are not yet implemented

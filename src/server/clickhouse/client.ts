@@ -5,4 +5,5 @@ export const clickhouse = createClient({
   username: process.env.CLICKHOUSE_USER ?? 'taxisbi',
   password: process.env.CLICKHOUSE_PASSWORD ?? 'ajaxiscool',
   database: process.env.CLICKHOUSE_DATABASE ?? 'taxisbi',
+  request_timeout: Number(process.env.CLICKHOUSE_REQUEST_TIMEOUT_MS ?? 20000),
 });

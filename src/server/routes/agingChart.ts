@@ -1,6 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { clickhouse } from '../clickhouse/client';
+import { getClickHouseQuerySettings } from '../clickhouse/querySettings';
+import {
+  buildBucketExpressions,
+  type AgingBucketInput,
+} from '../rulebooks/agingBucketRuntime';
 
 export type ThemeDef = {
   key: string;
@@ -24,16 +29,6 @@ export type ThemeContext = {
   rulebook: string;
   chart: string;
   dashboard?: string;
-};
-
-export type AgingBucketInput = {
-  name: string;
-  isSpecial: boolean;
-  combinator: 'AND' | 'OR';
-  conditions: Array<{
-    operator: '=' | '<>' | '>=' | '<=' | '>' | '<';
-    value: number;
-  }>;
 };
 
 const DEFAULT_AGING_BUCKETS: AgingBucketInput[] = [
@@ -180,6 +175,37 @@ function resolveTheme(
   };
 }
 
+function assertNoThemeCycles(themeMap: Record<string, ThemeDef>) {
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+
+  const visit = (key: string, chain: string[]) => {
+    if (visited.has(key)) {
+      return;
+    }
+
+    if (visiting.has(key)) {
+      const startIndex = chain.indexOf(key);
+      const cycle = chain.slice(startIndex).concat(key).join(' -> ');
+      throw new Error(`Theme inheritance cycle detected: ${cycle}`);
+    }
+
+    const theme = themeMap[key];
+    if (!theme) {
+      return;
+    }
+
+    visiting.add(key);
+    if (theme.extends && themeMap[theme.extends]) {
+      visit(theme.extends, [...chain, key]);
+    }
+    visiting.delete(key);
+    visited.add(key);
+  };
+
+  Object.keys(themeMap).forEach((key) => visit(key, []));
+}
+
 export async function loadBuiltInThemes(themeRootPath: string, context: ThemeContext) {
   const allThemeFiles = await collectJsonFilesRecursively(themeRootPath);
   const rawThemeMap: Record<string, ThemeDef> = {};
@@ -211,6 +237,8 @@ export async function loadBuiltInThemes(themeRootPath: string, context: ThemeCon
     };
   }
 
+  assertNoThemeCycles(rawThemeMap);
+
   const resolved: Record<string, ThemeDef> = {};
   for (const key of Object.keys(rawThemeMap)) {
     const hydrated = resolveTheme(key, rawThemeMap, new Set<string>());
@@ -237,36 +265,6 @@ function isValidIsoDate(value: string) {
 
 function getTodayIsoDate() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function escapeSqlString(value: string) {
-  return value.replace(/'/g, "''");
-}
-
-function buildBucketExpressions(buckets: AgingBucketInput[]) {
-  const labelParts: string[] = [];
-  const orderParts: string[] = [];
-
-  buckets.forEach((bucket, index) => {
-    const conditionParts = bucket.conditions
-      .map((entry) => `days_past_due ${entry.operator} ${entry.value}`)
-      .map((entry) => `(${entry})`);
-    const joiner = bucket.isSpecial && bucket.combinator === 'OR' ? ' OR ' : ' AND ';
-    const condition = conditionParts.join(joiner);
-    const label = `'${escapeSqlString(bucket.name)}'`;
-    const orderValue = String(index + 1);
-
-    labelParts.push(condition, label);
-    orderParts.push(condition, orderValue);
-  });
-
-  const agingBucketExpr = `multiIf(${labelParts.join(', ')}, 'Unbucketed')`;
-  const agingBucketOrderExpr = `multiIf(${orderParts.join(', ')}, 9999)`;
-
-  return {
-    agingBucketExpr,
-    agingBucketOrderExpr,
-  };
 }
 
 function toSafeAgingBuckets(input?: AgingBucketInput[]) {
@@ -323,6 +321,7 @@ export async function getAgingChart(reportDateInput?: string, bucketDefsInput?: 
     query_params: {
       report_date: reportDate,
     },
+    clickhouse_settings: getClickHouseQuerySettings(),
   });
 
   const data = await resultSet.json();
